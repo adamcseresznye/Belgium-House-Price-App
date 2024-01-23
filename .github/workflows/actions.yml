@@ -1,4 +1,4 @@
-name: run main.py workflow
+name: test_scrapy_with_mongodb
 
 on:
   workflow_dispatch:
@@ -26,5 +26,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: run scrapy
+        working-directory: src/bookscraper/bookscraper/spiders
         run: |
           echo scrapy crawl -s MONGODB_URI="mongodb+srv://${{ secrets.MONGO_DB_USERNAME }}:${{ secrets.MONGO_DB_PASSWORD }}@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority" -s MONGODB_DATABASE="scrapy" products
