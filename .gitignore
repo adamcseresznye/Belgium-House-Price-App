@@ -87,3 +87,6 @@ target/
 
 # Mypy cache
 .mypy_cache/
+
+# exclude creds.py in src folder from source control
+/src/creds.py

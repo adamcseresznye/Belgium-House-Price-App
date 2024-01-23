@@ -3,7 +3,7 @@ name: test_scrapy_with_mongodb
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '15 14 1 12 2'
 
 jobs:
   run_workflow:
