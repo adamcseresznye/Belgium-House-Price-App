@@ -8,16 +8,16 @@ import sys
 
 import pymongo
 
-from .items import BookscraperItem
+from .items import HouseScraperItem
 
 
-class BookscraperPipeline:
+class HouseScraperPipeline:
     def process_item(self, item, spider):
         return item
 
 
 class MongoDBPipeline:
-    collection = "scrapy_items"
+    collection = "BE_houses"
 
     def __init__(self, mongodb_uri, mongodb_db):
         self.mongodb_uri = mongodb_uri
@@ -36,12 +36,12 @@ class MongoDBPipeline:
         self.client = pymongo.MongoClient(self.mongodb_uri)
         self.db = self.client[self.mongodb_db]
         # Start with a clean database
-        self.db[self.collection].delete_many({})
+        # self.db[self.collection].delete_many({})
 
     def close_spider(self, spider):
         self.client.close()
 
     def process_item(self, item, spider):
-        data = dict(BookscraperItem(item))
+        data = dict(HouseScraperItem(item))
         self.db[self.collection].insert_one(data)
         return item

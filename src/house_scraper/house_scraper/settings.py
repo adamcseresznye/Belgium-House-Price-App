@@ -1,4 +1,4 @@
-# Scrapy settings for bookscraper project
+# Scrapy settings for house_scraper project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -7,10 +7,10 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = "bookscraper"
+BOT_NAME = "house_scraper"
 
-SPIDER_MODULES = ["bookscraper.spiders"]
-NEWSPIDER_MODULE = "bookscraper.spiders"
+SPIDER_MODULES = ["house_scraper.spiders"]
+NEWSPIDER_MODULE = "house_scraper.spiders"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -45,13 +45,13 @@ ROBOTSTXT_OBEY = False
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 # SPIDER_MIDDLEWARES = {
-#    "bookscraper.middlewares.BookscraperSpiderMiddleware": 543,
+#    "house_scraper.middlewares.HouseScraperSpiderMiddleware": 543,
 # }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 # DOWNLOADER_MIDDLEWARES = {
-#    "bookscraper.middlewares.BookscraperDownloaderMiddleware": 543,
+#    "house_scraper.middlewares.HouseScraperDownloaderMiddleware": 543,
 # }
 
 # Enable or disable extensions
@@ -63,8 +63,8 @@ ROBOTSTXT_OBEY = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    #    "bookscraper.pipelines.BookscraperPipeline": 300,
-    "bookscraper.pipelines.MongoDBPipeline": 500
+    #    "house_scraper.pipelines.HouseScraperPipeline": 300,
+    "house_scraper.pipelines.MongoDBPipeline": 500
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
