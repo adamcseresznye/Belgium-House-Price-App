@@ -26,6 +26,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: run scrapy
-        working-directory: src/bookscraper/bookscraper/spiders
+        working-directory: src/house_scraper/house_scraper/spiders
         run: |
           scrapy crawl -s MONGODB_URI="mongodb+srv://${{ secrets.MONGO_DB_USERNAME }}:${{ secrets.MONGO_DB_PASSWORD }}@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority" -s MONGODB_DATABASE="scrapy" house
