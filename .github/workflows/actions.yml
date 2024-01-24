@@ -1,4 +1,4 @@
-name: test_scrapy_with_mongodb
+name: pipeline
 
 on:
   workflow_dispatch:
