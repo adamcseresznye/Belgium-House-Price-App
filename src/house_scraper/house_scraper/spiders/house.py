@@ -21,18 +21,19 @@ class HouseSpider(scrapy.Spider):
         )
 
     def parse_links(self, response):
-        # Extract the links to the individual ads on the page
+        #    # Extract the links to the individual ads on the page
         links = response.css(
             "h2.card__title.card--result__title a::attr(href)"
         ).getall()
-        for link in links:
-            yield SeleniumRequest(url=link, callback=self.parse_ad)
 
-        # Handle pagination
-        # next_page = response.css('a.pagination__link--next::attr(href)').get()
+    #    for link in links:
+    #        yield SeleniumRequest(url=link, callback=self.parse_ad)
 
-        # if next_page is not None:
-        #    yield SeleniumRequest(url=next_page, callback=self.parse_links)
+    # Handle pagination
+    # next_page = response.css('a.pagination__link--next::attr(href)').get()
+
+    # if next_page is not None:
+    #    yield SeleniumRequest(url=next_page, callback=self.parse_links)
 
     def parse_ad(self, response):
         l = ItemLoader(item=FlexibleItem(), response=response)
