@@ -12,9 +12,12 @@ BOT_NAME = "house_scraper"
 SPIDER_MODULES = ["house_scraper.spiders"]
 NEWSPIDER_MODULE = "house_scraper.spiders"
 
+SELENIUM_DRIVER_NAME = "chrome"
+# SELENIUM_DRIVER_EXECUTABLE_PATH = "C:/Users/s0212777/OneDrive - Universiteit Antwerpen/Bureaublad/scrapy_test/quotes-js-project/chromedriver.exe"
+SELENIUM_DRIVER_ARGUMENTS = []  # tried headless but was not working
 
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+DOWNLOADER_MIDDLEWARES = {"scrapy_selenium.SeleniumMiddleware": 800}
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -63,7 +66,7 @@ ROBOTSTXT_OBEY = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    #    "house_scraper.pipelines.HouseScraperPipeline": 300,
+    #    #    "house_scraper.pipelines.HouseScraperPipeline": 300,
     "house_scraper.pipelines.MongoDBPipeline": 500
 }
 

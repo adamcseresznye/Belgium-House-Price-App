@@ -8,7 +8,7 @@ import sys
 
 import pymongo
 
-from .items import HouseScraperItem
+from .items import FlexibleItem, HouseScraperItem
 
 
 class HouseScraperPipeline:
@@ -42,6 +42,6 @@ class MongoDBPipeline:
         self.client.close()
 
     def process_item(self, item, spider):
-        data = dict(HouseScraperItem(item))
+        data = dict(FlexibleItem(item))
         self.db[self.collection].insert_one(data)
         return item
