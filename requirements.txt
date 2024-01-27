@@ -8,4 +8,3 @@ scrapy_selenium==0.0.7
 selenium==4.17.2
 setuptools==69.0.3
 w3lib==2.1.2
-webdriver_manager==4.0.1
