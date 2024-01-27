@@ -7,13 +7,15 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+from webdriver_manager.chrome import ChromeDriverManager
+
 BOT_NAME = "house_scraper"
 
 SPIDER_MODULES = ["house_scraper.spiders"]
 NEWSPIDER_MODULE = "house_scraper.spiders"
 
 SELENIUM_DRIVER_NAME = "chrome"
-# SELENIUM_DRIVER_EXECUTABLE_PATH = "C:/Users/s0212777/OneDrive - Universiteit Antwerpen/Bureaublad/scrapy_test/quotes-js-project/chromedriver.exe"
+SELENIUM_DRIVER_EXECUTABLE_PATH = ChromeDriverManager().install()
 SELENIUM_DRIVER_ARGUMENTS = []  # tried headless but was not working
 
 

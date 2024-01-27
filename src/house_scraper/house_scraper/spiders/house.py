@@ -12,7 +12,7 @@ class HouseSpider(scrapy.Spider):
     name = "house"
 
     def start_requests(self):
-        url = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance"
+        url = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
         yield SeleniumRequest(
             url=url,
             callback=self.parse_links,
@@ -26,14 +26,14 @@ class HouseSpider(scrapy.Spider):
             "h2.card__title.card--result__title a::attr(href)"
         ).getall()
 
-    #    for link in links:
-    #        yield SeleniumRequest(url=link, callback=self.parse_ad)
+        for link in links:
+            yield SeleniumRequest(url=link, callback=self.parse_ad)
 
-    # Handle pagination
-    # next_page = response.css('a.pagination__link--next::attr(href)').get()
+        # Handle pagination
+        next_page = response.css("a.pagination__link--next::attr(href)").get()
 
-    # if next_page is not None:
-    #    yield SeleniumRequest(url=next_page, callback=self.parse_links)
+        if next_page is not None:
+            yield SeleniumRequest(url=next_page, callback=self.parse_links)
 
     def parse_ad(self, response):
         l = ItemLoader(item=FlexibleItem(), response=response)
