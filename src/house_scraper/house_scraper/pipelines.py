@@ -41,11 +41,6 @@ class MongoDBPipeline:
     def close_spider(self, spider):
         self.client.close()
 
-    # def process_item(self, item, spider):
-    #    data = dict(FlexibleItem(item))
-    #    self.db[self.collection].insert_one(data)
-    #    return item
-
     def process_item(self, item, spider):
         # Convert item to FlexibleItem
         data = dict(FlexibleItem(item))
@@ -53,6 +48,13 @@ class MongoDBPipeline:
         for key, value in data.items():
             if isinstance(value, list) and len(value) == 1:
                 data[key] = value[0]
+
+        # List of columns to keep
+        columns_to_keep = ["column1", "column2", "column3"]
+
+        # Create a new dictionary with only the columns to keep
+        # data = {k: v for k, v in data.items() if k in columns_to_keep}
+
         # Insert data into database
         self.db[self.collection].insert_one(data)
         return item
