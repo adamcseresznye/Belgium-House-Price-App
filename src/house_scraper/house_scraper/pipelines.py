@@ -8,7 +8,7 @@ import sys
 
 import pymongo
 
-from .items import FlexibleItem, HouseScraperItem
+from .items import FlexibleItem
 
 
 class HouseScraperPipeline:
@@ -50,10 +50,29 @@ class MongoDBPipeline:
                 data[key] = value[0]
 
         # List of columns to keep
-        columns_to_keep = ["column1", "column2", "column3"]
+        columns_to_keep = [
+            "_id",
+            "list_price",
+            "date",
+            "energy_class",
+            "primary_energy_consumption",
+            "ad_id",
+            "bedrooms",
+            "tenement_building",
+            "living_area",
+            "surface_of_the_plot",
+            "bathrooms",
+            "double_glazing",
+            "number_of_frontages",
+            "province",
+            "building_condition",
+            "toilets",
+            "heating_type",
+            "construction_year",
+        ]
 
         # Create a new dictionary with only the columns to keep
-        # data = {k: v for k, v in data.items() if k in columns_to_keep}
+        data = {k: v for k, v in data.items() if k in columns_to_keep}
 
         # Insert data into database
         self.db[self.collection].insert_one(data)

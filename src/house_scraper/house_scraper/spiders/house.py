@@ -12,7 +12,7 @@ class HouseSpider(scrapy.Spider):
     name = "house"
 
     def start_requests(self):
-        url = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=331&orderBy=relevance"
+        url = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
         yield SeleniumRequest(
             url=url,
             callback=self.parse_links,
@@ -21,7 +21,7 @@ class HouseSpider(scrapy.Spider):
         )
 
     def parse_links(self, response):
-        #    # Extract the links to the individual ads on the page
+        # Extract the links to the individual ads on the page
         links = response.css(
             "h2.card__title.card--result__title a::attr(href)"
         ).getall()
@@ -54,7 +54,7 @@ class HouseSpider(scrapy.Spider):
         # Extract information not in tables:
         l.add_css("list_price", "p.classified__price span.sr-only::text")
         l.add_css(
-            "zip_code", "span.classified__information--address-row:nth-child(2)::text"
+            "province", "span.classified__information--address-row:nth-child(2)::text"
         )
         l.add_css("ad_id", "div.classified__header--immoweb-code::text")
         l.add_value("date", str(date.today()))
