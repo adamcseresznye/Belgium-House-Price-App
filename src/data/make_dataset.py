@@ -9,45 +9,46 @@ from requests_html import Element, HTMLSession
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
 from webdriver_manager.firefox import GeckoDriverManager
 
 
 def get_house_urls(url):
     options = Options()
     options.headless = True
-    driver = webdriver.Firefox(
-        options=options, executable_path=GeckoDriverManager().install()
-    )
-    # driver = webdriver.Firefox(options=options)
 
-    next_page = url
+    service = Service(GeckoDriverManager().install())
+    driver = webdriver.Firefox(service=service, options=options)
 
-    all_links = []
+    try:
+        next_page = url
 
-    while next_page:
-        driver.get(next_page)
-        print("Scraping:", next_page)
+        all_links = []
 
-        elements = driver.find_elements(By.CSS_SELECTOR, ".search-results a")
-        links = [element.get_attribute("href") for element in elements]
-        filtered_links = [
-            link
-            for link in links
-            if link and "www.immoweb.be/en/classified/house/for-sale" in link
-        ]
+        while next_page:
+            driver.get(next_page)
+            print("Scraping:", next_page)
 
-        all_links.extend(filtered_links)
+            elements = driver.find_elements(By.CSS_SELECTOR, ".search-results a")
+            links = [element.get_attribute("href") for element in elements]
+            filtered_links = [
+                link
+                for link in links
+                if link and "www.immoweb.be/en/classified/house/for-sale" in link
+            ]
 
-        # Find the link to the next page
-        next_page_elements = driver.find_elements(
-            By.CSS_SELECTOR, "a.pagination__link--next"
-        )
-        if next_page_elements:
-            next_page = next_page_elements[0].get_attribute("href")
-        else:
-            break
+            all_links.extend(filtered_links)
 
-    driver.quit()
+            # Find the link to the next page
+            next_page_elements = driver.find_elements(
+                By.CSS_SELECTOR, "a.pagination__link--next"
+            )
+            if next_page_elements:
+                next_page = next_page_elements[0].get_attribute("href")
+            else:
+                break
+    finally:
+        driver.quit()
 
     return all_links
 
