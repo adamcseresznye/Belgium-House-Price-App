@@ -15,8 +15,10 @@ from webdriver_manager.firefox import GeckoDriverManager
 def get_house_urls(url):
     options = Options()
     options.headless = True
-    # driver = webdriver.Firefox(options=options, executable_path=GeckoDriverManager().install())
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Firefox(
+        options=options, executable_path=GeckoDriverManager().install()
+    )
+    # driver = webdriver.Firefox(options=options)
 
     next_page = url
 
