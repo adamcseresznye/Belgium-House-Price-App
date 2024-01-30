@@ -12,7 +12,7 @@ class HouseSpider(scrapy.Spider):
     name = "house"
 
     def start_requests(self):
-        url = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance"
+        url = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=332&orderBy=relevance"
         yield SeleniumRequest(
             url=url,
             callback=self.parse_links,

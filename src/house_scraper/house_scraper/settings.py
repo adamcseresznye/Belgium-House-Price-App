@@ -12,9 +12,8 @@ BOT_NAME = "house_scraper"
 SPIDER_MODULES = ["house_scraper.spiders"]
 NEWSPIDER_MODULE = "house_scraper.spiders"
 
-SELENIUM_DRIVER_NAME = "chrome"
-SELENIUM_DRIVER_ARGUMENTS = []  # tried headless but was not working
-
+SELENIUM_DRIVER_NAME = "firefox"
+SELENIUM_DRIVER_ARGUMENTS = ["-headless"]  # tried headless but was not working
 
 DOWNLOADER_MIDDLEWARES = {"scrapy_selenium.SeleniumMiddleware": 800}
 
