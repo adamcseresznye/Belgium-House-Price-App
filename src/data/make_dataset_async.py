@@ -1,14 +1,17 @@
+import asyncio
 import os
-import pickle
 import re
+import sys
 import time
 from datetime import date
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 import pymongo
 from requests_html import AsyncHTMLSession, HTMLSession
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 def get_house_urls(
@@ -43,23 +46,6 @@ def get_house_urls(
         return get_house_urls(next_page, all_links)
     else:
         return all_links
-
-
-def get_house_data(url):
-    try:
-        session = HTMLSession()
-        r = session.get(url)
-        r.html.render(timeout=15)
-
-        individual_ad = pd.concat(pd.read_html(StringIO(r.text))).dropna().set_index(0)
-
-        individual_ad.loc["day_of_retrieval", 1] = str(date.today())
-        individual_ad.loc["ad_url", 1] = url
-        individual_ad.loc["zip_code", 1] = re.search(r"/(\d{4})/", url).group(1)
-
-        return individual_ad
-    except Exception as e:
-        print(f"An error occurred: {e}")
 
 
 def convert_zip_to_province(value):
@@ -193,29 +179,48 @@ class DataCleaner:
         )
 
 
+"""
+urls = ['https://www.immoweb.be/en/classified/house/for-sale/daverdisse/6929/10909568',
+         'https://www.immoweb.be/en/classified/house/for-sale/koekelare/8680/10771155',
+         'https://www.immoweb.be/en/classified/house/for-sale/houthalen-helchteren/3530/10987558',
+         'https://www.immoweb.be/en/classified/house/for-sale/tienen/3300/11022381',
+         'https://www.immoweb.be/en/classified/house/for-sale/huy/4500/11021927',]
+"""
+
+
+async def get_house_data(s, url):
+    try:
+        r = await s.get(url)
+        await r.html.arender(timeout=15)
+
+        individual_ad = pd.concat(pd.read_html(StringIO(r.text))).dropna().set_index(0)
+
+        individual_ad.loc["day_of_retrieval", 1] = str(date.today())
+        individual_ad.loc["ad_url", 1] = url
+        individual_ad.loc["zip_code", 1] = re.search(r"/(\d{4})/", url).group(1)
+
+        data_cleaner = DataCleaner(individual_ad)
+        processed_dict = data_cleaner.process_item()
+
+        return processed_dict
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+async def main(urls):
+    s = AsyncHTMLSession()
+    tasks = (get_house_data(s, url) for url in urls)
+    results = await asyncio.gather(*tasks)
+    await s.close()  # close the session
+    return results
+
+
 if __name__ == "__main__":
-    # get links to houses
     urls = get_house_urls(
         "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
-    )
+    )[:3]
+    print("get_house_urls is done", urls)
 
-    # connect to mongodb
-    mongo_uri = os.getenv("MONGO_URI")
-    client = pymongo.MongoClient(mongo_uri)
-    db = client.test
-
-    for url in urls:
-        print("Working on:", url)
-        result = get_house_data(url)
-
-        data_cleaner = DataCleaner(result)
-        processed_dict = data_cleaner.process_item()
-        print(processed_dict)
-
-        db.BE_houses.insert_one(processed_dict)
-        time.sleep(1)
-
-    client.close()
-
-# Time taken: 42.20484900000156
-# time taken: 13.7827954999957
+    results = asyncio.run(main(urls))
+    print(results)
