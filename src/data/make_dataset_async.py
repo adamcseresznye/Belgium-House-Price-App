@@ -3,12 +3,15 @@ import os
 import re
 import sys
 import time
+import warnings
 from datetime import date
 from io import StringIO
 
 import pandas as pd
 import pymongo
 from requests_html import AsyncHTMLSession, HTMLSession
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -179,29 +182,39 @@ class DataCleaner:
         )
 
 
-async def get_house_data(s, url):
-    try:
-        r = await s.get(url)
-        await r.html.arender(timeout=15)
-
-        individual_ad = pd.concat(pd.read_html(StringIO(r.text))).dropna().set_index(0)
-
-        individual_ad.loc["day_of_retrieval", 1] = str(date.today())
-        individual_ad.loc["ad_url", 1] = url
-        individual_ad.loc["zip_code", 1] = re.search(r"/(\d{4})/", url).group(1)
-
-        data_cleaner = DataCleaner(individual_ad)
-        processed_dict = data_cleaner.process_item()
-
-        return processed_dict
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
+sem = asyncio.Semaphore(10)
 
 
-async def main(urls):
+async def get_house_data(s, url, db):
+    async with sem:
+        try:
+            r = await s.get(url)
+            await r.html.arender(timeout=15)
+
+            individual_ad = (
+                pd.concat(pd.read_html(StringIO(r.text))).dropna().set_index(0)
+            )
+
+            individual_ad.loc["day_of_retrieval", 1] = str(date.today())
+            individual_ad.loc["ad_url", 1] = url
+            individual_ad.loc["zip_code", 1] = re.search(r"/(\d{4})/", url).group(1)
+
+            # Process the individual ad
+            data_cleaner = DataCleaner(individual_ad)
+            processed_dict = data_cleaner.process_item()
+
+            # Insert the processed data into the database
+            db.BE_houses.insert_one(processed_dict)
+
+            return processed_dict
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+
+async def main(urls, db):
     s = AsyncHTMLSession()
-    tasks = (get_house_data(s, url) for url in urls)
+    tasks = (get_house_data(s, url, db) for url in urls)
     results = await asyncio.gather(*tasks)
     await s.close()  # close the session
     return results
@@ -209,9 +222,20 @@ async def main(urls):
 
 if __name__ == "__main__":
     urls = get_house_urls(
-        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
-    )[:20]
-    print("get_house_urls is done", urls)
+        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=150&orderBy=relevance"
+    )
+    print("get_house_urls is done. Length of urls:", len(urls))
 
-    results = asyncio.run(main(urls))
+    # Connect to MongoDB
+    mongo_uri = os.getenv("MONGO_URI")
+
+    client = pymongo.MongoClient(mongo_uri)
+    db = client.test
+    if client:
+        print("Connected to MongoDB")
+    else:
+        sys.exit("Failed to connect to MongoDB")
+
+    results = asyncio.run(main(urls, db))
     print(results)
+    print("Ads extracted:", len(results))
