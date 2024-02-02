@@ -179,15 +179,6 @@ class DataCleaner:
         )
 
 
-"""
-urls = ['https://www.immoweb.be/en/classified/house/for-sale/daverdisse/6929/10909568',
-         'https://www.immoweb.be/en/classified/house/for-sale/koekelare/8680/10771155',
-         'https://www.immoweb.be/en/classified/house/for-sale/houthalen-helchteren/3530/10987558',
-         'https://www.immoweb.be/en/classified/house/for-sale/tienen/3300/11022381',
-         'https://www.immoweb.be/en/classified/house/for-sale/huy/4500/11021927',]
-"""
-
-
 async def get_house_data(s, url):
     try:
         r = await s.get(url)
@@ -219,7 +210,7 @@ async def main(urls):
 if __name__ == "__main__":
     urls = get_house_urls(
         "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
-    )[:3]
+    )[:20]
     print("get_house_urls is done", urls)
 
     results = asyncio.run(main(urls))
