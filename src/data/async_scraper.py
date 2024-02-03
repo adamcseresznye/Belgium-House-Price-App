@@ -8,6 +8,7 @@ from io import StringIO
 
 import pandas as pd
 import pymongo
+from pyppeteer.errors import TimeoutError
 from requests_html import AsyncHTMLSession, HTMLSession
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -29,25 +30,36 @@ def get_house_urls(
             "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
         ]
     )
-    r = session.get(url)
-    r.html.render(timeout=15)
 
-    elements = r.html.find(".search-results a")
-    links = [element.attrs["href"] for element in elements if "href" in element.attrs]
-    filtered_links = [
-        link
-        for link in links
-        if link and "www.immoweb.be/en/classified/house/for-sale" in link
-    ]
+    page_counter = 0
 
-    all_links.extend(filtered_links)
+    while url:
+        try:
+            r = session.get(url)
+            r.html.render(timeout=15)
 
-    next_page = r.html.next()
-    if next_page:
-        print("Next page:", next_page)
-        return get_house_urls(next_page, all_links)
-    else:
-        return all_links
+            elements = r.html.find(".search-results a")
+            links = [
+                element.attrs["href"] for element in elements if "href" in element.attrs
+            ]
+            filtered_links = [
+                link
+                for link in links
+                if link and "www.immoweb.be/en/classified/house/for-sale" in link
+            ]
+
+            all_links.extend(filtered_links)
+
+            url = r.html.next()
+            if url:
+                page_counter += 1
+                sys.stdout.write("\rNumber of pages scraped: " + str(page_counter))
+                sys.stdout.flush()
+        except TimeoutError:
+            print("\nTimeout error, skipping this page.")
+            url = r.html.next()
+
+    return all_links
 
 
 def convert_zip_to_province(value):
