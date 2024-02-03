@@ -2,7 +2,6 @@ import asyncio
 import os
 import re
 import sys
-import time
 import warnings
 from datetime import date
 from io import StringIO
@@ -185,7 +184,7 @@ class DataCleaner:
 sem = asyncio.Semaphore(10)
 
 
-async def get_house_data(s, url, db):
+async def fetch_and_store_data(s, url, db):
     async with sem:
         try:
             r = await s.get(url)
@@ -214,7 +213,7 @@ async def get_house_data(s, url, db):
 
 async def main(urls, db):
     s = AsyncHTMLSession()
-    tasks = (get_house_data(s, url, db) for url in urls)
+    tasks = (fetch_and_store_data(s, url, db) for url in urls)
     results = await asyncio.gather(*tasks)
     await s.close()  # close the session
     return results
@@ -224,13 +223,13 @@ if __name__ == "__main__":
     urls = get_house_urls(
         "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=150&orderBy=relevance"
     )
-    print("get_house_urls is done. Length of urls:", len(urls))
+    print("Length of urls:", len(urls))
 
     # Connect to MongoDB
     mongo_uri = os.getenv("MONGO_URI")
 
     client = pymongo.MongoClient(mongo_uri)
-    db = client.test
+    db = client.dev
     if client:
         print("Connected to MongoDB")
     else:
