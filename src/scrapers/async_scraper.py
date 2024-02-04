@@ -233,14 +233,16 @@ async def main(urls, db):
 
 if __name__ == "__main__":
     urls = get_house_urls(
-        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=150&orderBy=relevance"
+        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
     )
     print("Length of urls:", len(urls))
 
     # Connect to MongoDB
-    mongo_uri = os.getenv("MONGO_URI")
+    # mongo_uri = os.getenv("MONGO_URI")
 
-    client = pymongo.MongoClient(mongo_uri)
+    client = pymongo.MongoClient(
+        "mongodb+srv://csenyechem:kvmVcLFUXsZtVpmt@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority"
+    )
     db = client.dev
     if client:
         print("Connected to MongoDB")
