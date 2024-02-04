@@ -238,10 +238,10 @@ if __name__ == "__main__":
     print("Length of urls:", len(urls))
 
     # Connect to MongoDB
-    # mongo_uri = os.getenv("MONGO_URI")
+    mongo_uri = os.getenv("MONGO_URI")
 
     client = pymongo.MongoClient(
-        "mongodb+srv://csenyechem:kvmVcLFUXsZtVpmt@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority"
+        mongo_uri
     )
     db = client.dev
     if client:
