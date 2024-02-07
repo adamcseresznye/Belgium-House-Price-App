@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import sys
+import time
 import warnings
 from datetime import date
 from io import StringIO
@@ -55,10 +56,15 @@ def get_house_urls(
                 page_counter += 1
                 sys.stdout.write("\rNumber of pages scraped: " + str(page_counter))
                 sys.stdout.flush()
+
+            r.close()
+            time.sleep(1)
+
         except TimeoutError:
             print("\nTimeout error, skipping this page.")
             url = r.html.next()
 
+    session.close()
     return all_links
 
 
