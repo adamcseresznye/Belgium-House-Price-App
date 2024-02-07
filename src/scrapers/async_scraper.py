@@ -193,10 +193,8 @@ class DataCleaner:
         )
 
 
-sem = asyncio.Semaphore(10)
-
-
 async def fetch_and_store_data(s, url, db):
+    sem = asyncio.Semaphore(10)
     async with sem:
         try:
             r = await s.get(url)
@@ -233,16 +231,14 @@ async def main(urls, db):
 
 if __name__ == "__main__":
     urls = get_house_urls(
-        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
+        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance"
     )
     print("Length of urls:", len(urls))
 
     # Connect to MongoDB
     mongo_uri = os.getenv("MONGO_URI")
 
-    client = pymongo.MongoClient(
-        mongo_uri
-    )
+    client = pymongo.MongoClient(mongo_uri)
     db = client.dev
     if client:
         print("Connected to MongoDB")
