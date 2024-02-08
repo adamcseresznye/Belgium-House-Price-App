@@ -28,6 +28,6 @@ jobs:
       - name: run spider
         working-directory: src/scrapers
         run: |
-          python async_scraper.py
+          python scraper.py
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}

@@ -18,56 +18,6 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def get_house_urls(
-    url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
-    all_links=None,
-):
-    if all_links is None:
-        all_links = []
-
-    session = HTMLSession(
-        browser_args=[
-            "--no-sandbox",
-            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-        ]
-    )
-
-    page_counter = 0
-
-    while url:
-        try:
-            r = session.get(url)
-            r.html.render(timeout=15)
-
-            elements = r.html.find(".search-results a")
-            links = [
-                element.attrs["href"] for element in elements if "href" in element.attrs
-            ]
-            filtered_links = [
-                link
-                for link in links
-                if link and "www.immoweb.be/en/classified/house/for-sale" in link
-            ]
-
-            all_links.extend(filtered_links)
-
-            url = r.html.next()
-            if url:
-                page_counter += 1
-                sys.stdout.write("\rNumber of pages scraped: " + str(page_counter))
-                sys.stdout.flush()
-
-            r.close()
-            time.sleep(1)
-
-        except TimeoutError:
-            print("\nTimeout error, skipping this page.")
-            url = r.html.next()
-
-    session.close()
-    return all_links
-
-
 def convert_zip_to_province(value):
     # data from https://www.spotzi.com/en/data-catalog/categories/postal-codes/belgium/
     if value is None:
@@ -199,15 +149,60 @@ class DataCleaner:
         )
 
 
-async def fetch_and_store_data(s, url, db):
-    sem = asyncio.Semaphore(10)
+def get_house_urls(
+    url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
+    all_links=None,
+    session=None,
+):
+    if all_links is None:
+        all_links = []
+
+    page_counter = 0
+
+    while url:
+        try:
+            response = session.get(url)
+            response.html.render(timeout=15)
+
+            elements = response.html.find(".search-results a")
+            links = [
+                element.attrs["href"] for element in elements if "href" in element.attrs
+            ]
+            filtered_links = [
+                link
+                for link in links
+                if link and "www.immoweb.be/en/classified/house/for-sale" in link
+            ]
+
+            all_links.extend(filtered_links)
+
+            url = response.html.next()
+            if url:
+                page_counter += 1
+                sys.stdout.write("\rNumber of pages scraped: " + str(page_counter))
+                sys.stdout.flush()
+
+            response.close()
+            time.sleep(1)
+
+        except TimeoutError:
+            print("\nTimeout error, skipping this page.")
+            url = response.html.next()
+    return all_links
+
+
+async def fetch_and_store_data(session, url, db, sem):
     async with sem:
         try:
-            r = await s.get(url)
-            await r.html.arender(timeout=15)
+            response = await session.get(url)
+            try:
+                await response.html.arender(timeout=15)
+            except TimeoutError:
+                print(f"Timeout error, skipping this page: {url}")
+                return
 
             individual_ad = (
-                pd.concat(pd.read_html(StringIO(r.text))).dropna().set_index(0)
+                pd.concat(pd.read_html(StringIO(response.text))).dropna().set_index(0)
             )
 
             individual_ad.loc["day_of_retrieval", 1] = str(date.today())
@@ -225,32 +220,56 @@ async def fetch_and_store_data(s, url, db):
 
         except Exception as e:
             print(f"An error occurred: {e}")
+        if response is not None:
+            await response.close()
 
 
-async def main(urls, db):
-    s = AsyncHTMLSession()
-    tasks = (fetch_and_store_data(s, url, db) for url in urls)
+async def main(urls, db, session):
+    sem = asyncio.Semaphore(10)
+    tasks = []
+    for url in urls:
+        task = asyncio.ensure_future(
+            fetch_and_store_data(session=session, url=url, db=db, sem=sem)
+        )
+        tasks.append(task)
     results = await asyncio.gather(*tasks)
-    await s.close()  # close the session
     return results
 
 
 if __name__ == "__main__":
+    regular_session = HTMLSession(
+        browser_args=[
+            "--no-sandbox",
+            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+        ]
+    )
+    async_session = AsyncHTMLSession(
+        browser_args=[
+            "--no-sandbox",
+            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+        ]
+    )
     urls = get_house_urls(
-        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance"
+        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=332&orderBy=relevance",
+        session=regular_session,
     )
     print("Length of urls:", len(urls))
+    regular_session.close()
 
     # Connect to MongoDB
     mongo_uri = os.getenv("MONGO_URI")
-
     client = pymongo.MongoClient(mongo_uri)
-    db = client.dev
+    db = client.test
     if client:
         print("Connected to MongoDB")
     else:
         sys.exit("Failed to connect to MongoDB")
 
-    results = asyncio.run(main(urls, db))
-    print(results)
-    print("Ads extracted:", len(results))
+    try:
+        loop = asyncio.get_event_loop()
+        results = loop.run_until_complete(main(urls, db, async_session))
+        print(results)
+        print("Ads extracted:", len(results))
+    finally:
+        client.close()
+        async_session.close()

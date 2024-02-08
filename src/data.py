@@ -17,7 +17,10 @@ def preprocess_and_split_data(df):
         df.drop(columns=["_id", "day_of_retrieval", "ad_url"])
         .dropna(subset="price")
         .query("price > 100000")
-        .assign(price=lambda df: np.log10(df.price))
+        .assign(
+            price=lambda df: np.log10(df.price),
+            zip_code=lambda df: pd.to_numeric(df.zip_code),
+        )
         .reset_index(drop=True)
     )
     X, y = processed_df.drop(columns="price"), processed_df.price

@@ -1,6 +1,6 @@
 import os
-import pickle
 import re
+import sys
 import time
 from datetime import date
 from io import StringIO
@@ -8,22 +8,18 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 import pymongo
-from requests_html import AsyncHTMLSession, HTMLSession
+from requests_html import HTMLSession
 
 
 def get_house_urls(
     url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
     all_links=None,
+    session=None,
+    N=50,  # Close and reopen the session after every N pages
 ):
     if all_links is None:
         all_links = []
 
-    session = HTMLSession(
-        browser_args=[
-            "--no-sandbox",
-            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-        ]
-    )
     r = session.get(url)
     r.html.render(timeout=15)
 
@@ -40,18 +36,27 @@ def get_house_urls(
     next_page = r.html.next()
     if next_page:
         print("Next page:", next_page)
-        return get_house_urls(next_page, all_links)
+        if len(all_links) % N == 0:
+            session.close()
+            session = HTMLSession(
+                browser_args=[
+                    "--no-sandbox",
+                    "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+                ]
+            )
+        return get_house_urls(next_page, all_links, session)
     else:
         return all_links
 
 
-def get_house_data(url):
+def get_house_data(session, url):
     try:
-        session = HTMLSession()
-        r = session.get(url)
-        r.html.render(timeout=15)
+        response = session.get(url)
+        response.html.render(timeout=15)
 
-        individual_ad = pd.concat(pd.read_html(StringIO(r.text))).dropna().set_index(0)
+        individual_ad = (
+            pd.concat(pd.read_html(StringIO(response.text))).dropna().set_index(0)
+        )
 
         individual_ad.loc["day_of_retrieval", 1] = str(date.today())
         individual_ad.loc["ad_url", 1] = url
@@ -60,6 +65,7 @@ def get_house_data(url):
         return individual_ad
     except Exception as e:
         print(f"An error occurred: {e}")
+        return None
 
 
 def convert_zip_to_province(value):
@@ -194,28 +200,50 @@ class DataCleaner:
 
 
 if __name__ == "__main__":
-    # get links to houses
-    urls = get_house_urls(
-        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=333&orderBy=relevance"
+    N = 50
+
+    session = HTMLSession(
+        browser_args=[
+            "--no-sandbox",
+            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+        ]
     )
+    # get links to houses
+    urls = get_house_urls(session=session)
+    print("Length of urls:", len(urls))
 
     # connect to mongodb
     mongo_uri = os.getenv("MONGO_URI")
     client = pymongo.MongoClient(mongo_uri)
-    db = client.test
+    db = client.development
+    if client:
+        print("Connected to MongoDB")
+    else:
+        sys.exit("Failed to connect to MongoDB")
+    try:
+        for i, url in enumerate(urls):
+            print(f"Working on: {i} out of {len(urls)} : {url}")
+            result = get_house_data(session=session, url=url)
 
-    for url in urls:
-        print("Working on:", url)
-        result = get_house_data(url)
+            if result is None:
+                print(f"Skipping url due to error: {url}")
+                continue
 
-        data_cleaner = DataCleaner(result)
-        processed_dict = data_cleaner.process_item()
-        print(processed_dict)
+            data_cleaner = DataCleaner(result)
+            processed_dict = data_cleaner.process_item()
+            print(processed_dict)
 
-        db.BE_houses.insert_one(processed_dict)
-        time.sleep(1)
+            db.BE_houses.insert_one(processed_dict)
+            # time.sleep(1)
 
-    client.close()
-
-# Time taken: 42.20484900000156
-# time taken: 13.7827954999957
+            if (i + 1) % N == 0:
+                session.close()
+                session = HTMLSession(
+                    browser_args=[
+                        "--no-sandbox",
+                        "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+                    ]
+                )
+    finally:
+        client.close()
+        session.close()
