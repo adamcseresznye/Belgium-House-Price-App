@@ -6,9 +6,11 @@ from pymongoarrow.api import find_pandas_all
 import creds
 
 
-def retrieve_data_from_MongoDB(query):
+def retrieve_data_from_MongoDB(db_name, collection_name, query):
     cluster = MongoClient(creds.Creds.URI)
-    df = find_pandas_all(cluster.dev.BE_houses, query)
+    db = cluster[db_name]
+    collection = db[collection_name]
+    df = find_pandas_all(collection, query)
     return df
 
 

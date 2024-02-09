@@ -149,50 +149,49 @@ class DataCleaner:
         )
 
 
+BROWSER_ARGS = [
+    "--no-sandbox",
+    "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+]
+
+
 def get_house_urls(
+    session,
+    N,
     url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
     all_links=None,
-    session=None,
 ):
     if all_links is None:
         all_links = []
 
-    page_counter = 0
+    r = session.get(url)
+    r.html.render(timeout=15)
 
-    while url:
-        try:
-            response = session.get(url)
-            response.html.render(timeout=15)
+    elements = r.html.find(".search-results a")
+    links = [element.attrs["href"] for element in elements if "href" in element.attrs]
+    filtered_links = [
+        link
+        for link in links
+        if link and "www.immoweb.be/en/classified/house/for-sale" in link
+    ]
 
-            elements = response.html.find(".search-results a")
-            links = [
-                element.attrs["href"] for element in elements if "href" in element.attrs
-            ]
-            filtered_links = [
-                link
-                for link in links
-                if link and "www.immoweb.be/en/classified/house/for-sale" in link
-            ]
+    all_links.extend(filtered_links)
 
-            all_links.extend(filtered_links)
+    next_page = r.html.next()
+    if next_page:
+        print("Next page:", next_page)
+        if len(all_links) % N == 0:
+            session.close()
+            session = HTMLSession(browser_args=BROWSER_ARGS)
 
-            url = response.html.next()
-            if url:
-                page_counter += 1
-                sys.stdout.write("\rNumber of pages scraped: " + str(page_counter))
-                sys.stdout.flush()
-
-            response.close()
-            time.sleep(1)
-
-        except TimeoutError:
-            print("\nTimeout error, skipping this page.")
-            url = response.html.next()
-    return all_links
+        return get_house_urls(session, N, next_page, all_links)
+    else:
+        return all_links
 
 
 async def fetch_and_store_data(session, url, db, sem):
     async with sem:
+        response = None
         try:
             response = await session.get(url)
             try:
@@ -226,38 +225,31 @@ async def fetch_and_store_data(session, url, db, sem):
 
 async def main(urls, db, session):
     sem = asyncio.Semaphore(10)
-    tasks = []
-    for url in urls:
-        task = asyncio.ensure_future(
-            fetch_and_store_data(session=session, url=url, db=db, sem=sem)
-        )
-        tasks.append(task)
-    results = await asyncio.gather(*tasks)
+    tasks = [
+        asyncio.create_task(fetch_and_store_data(session, url, db, sem)) for url in urls
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
     return results
 
 
 if __name__ == "__main__":
-    regular_session = HTMLSession(
-        browser_args=[
-            "--no-sandbox",
-            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-        ]
-    )
-    async_session = AsyncHTMLSession(
-        browser_args=[
-            "--no-sandbox",
-            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-        ]
-    )
+    N = 100
+
+    regular_session = HTMLSession(browser_args=BROWSER_ARGS)
+    # get links to houses
     urls = get_house_urls(
-        "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=332&orderBy=relevance",
+        url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=332&orderBy=relevance",
         session=regular_session,
+        N=N,
     )
     print("Length of urls:", len(urls))
     regular_session.close()
 
+    async_session = AsyncHTMLSession(browser_args=BROWSER_ARGS)
+
     # Connect to MongoDB
-    mongo_uri = os.getenv("MONGO_URI")
+    mongo_uri = "mongodb+srv://csenyechem:kvmVcLFUXsZtVpmt@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority"
+    # mongo_uri = os.getenv("MONGO_URI")
     client = pymongo.MongoClient(mongo_uri)
     db = client.test
     if client:
@@ -266,8 +258,7 @@ if __name__ == "__main__":
         sys.exit("Failed to connect to MongoDB")
 
     try:
-        loop = asyncio.get_event_loop()
-        results = loop.run_until_complete(main(urls, db, async_session))
+        results = asyncio.run(main(urls, db, async_session))
         print(results)
         print("Ads extracted:", len(results))
     finally:
