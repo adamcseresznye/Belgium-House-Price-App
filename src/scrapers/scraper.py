@@ -1,21 +1,24 @@
 import os
 import re
 import sys
-import time
 from datetime import date
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 import pymongo
 from requests_html import HTMLSession
 
+BROWSER_ARGS = [
+    "--no-sandbox",
+    "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+]
+
 
 def get_house_urls(
+    session,
+    N,
     url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
     all_links=None,
-    session=None,
-    N=50,  # Close and reopen the session after every N pages
 ):
     if all_links is None:
         all_links = []
@@ -38,13 +41,9 @@ def get_house_urls(
         print("Next page:", next_page)
         if len(all_links) % N == 0:
             session.close()
-            session = HTMLSession(
-                browser_args=[
-                    "--no-sandbox",
-                    "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-                ]
-            )
-        return get_house_urls(next_page, all_links, session)
+            session = HTMLSession(browser_args=BROWSER_ARGS)
+
+        return get_house_urls(session, N, next_page, all_links)
     else:
         return all_links
 
@@ -200,16 +199,15 @@ class DataCleaner:
 
 
 if __name__ == "__main__":
-    N = 50
+    N = 100
 
-    session = HTMLSession(
-        browser_args=[
-            "--no-sandbox",
-            "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-        ]
-    )
+    session = HTMLSession(browser_args=BROWSER_ARGS)
     # get links to houses
-    urls = get_house_urls(session=session)
+    urls = get_house_urls(
+        session=session,
+        url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=331&orderBy=relevance",
+        N=N,
+    )
     print("Length of urls:", len(urls))
 
     # connect to mongodb
@@ -222,6 +220,10 @@ if __name__ == "__main__":
         sys.exit("Failed to connect to MongoDB")
     try:
         for i, url in enumerate(urls):
+            if i % N == 0:
+                if session:
+                    session.close()
+                session = HTMLSession(browser_args=BROWSER_ARGS)
             print(f"Working on: {i} out of {len(urls)} : {url}")
             result = get_house_data(session=session, url=url)
 
@@ -235,15 +237,6 @@ if __name__ == "__main__":
 
             db.BE_houses.insert_one(processed_dict)
             # time.sleep(1)
-
-            if (i + 1) % N == 0:
-                session.close()
-                session = HTMLSession(
-                    browser_args=[
-                        "--no-sandbox",
-                        "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-                    ]
-                )
     finally:
         client.close()
         session.close()
