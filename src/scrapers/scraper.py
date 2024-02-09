@@ -205,7 +205,6 @@ if __name__ == "__main__":
     # get links to houses
     urls = get_house_urls(
         session=session,
-        url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=331&orderBy=relevance",
         N=N,
     )
     print("Length of urls:", len(urls))
