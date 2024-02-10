@@ -248,8 +248,7 @@ if __name__ == "__main__":
     async_session = AsyncHTMLSession(browser_args=BROWSER_ARGS)
 
     # Connect to MongoDB
-    mongo_uri = "mongodb+srv://csenyechem:kvmVcLFUXsZtVpmt@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority"
-    # mongo_uri = os.getenv("MONGO_URI")
+    mongo_uri = os.getenv("MONGO_URI")
     client = pymongo.MongoClient(mongo_uri)
     db = client.test
     if client:
