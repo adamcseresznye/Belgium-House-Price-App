@@ -44,7 +44,7 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
         preprocessing.PolynomialFeatures(interaction_only=False, include_bias=False),
     )
     numeric_transformer = pipeline.make_pipeline(
-        impute.SimpleImputer(strategy="median")
+        impute.SimpleImputer(strategy="median"),
     )
 
     categorical_transformer = pipeline.make_pipeline(
