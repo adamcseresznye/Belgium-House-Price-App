@@ -90,3 +90,6 @@ target/
 
 # exclude creds.py in src folder from source control
 /src/creds.py
+
+# catboost training log
+.catboost_info/
