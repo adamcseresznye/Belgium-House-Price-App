@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import Tuple
 
 import catboost
+import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
 
-from data import utils
+import utils
 from models import predict_model
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -25,96 +26,15 @@ st.set_page_config(
 )
 
 
-@st.cache_data
-def fetch_data() -> pd.DataFrame:
-    """
-    Retrieves and returns selected columns from the most recent data file.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing the specified columns from the latest data file.
-    """
-
-    columns_to_select = [
-        "bedrooms",
-        "state",
-        "number_of_frontages",
-        "street",
-        "lng",
-        "primary_energy_consumption",
-        "bathrooms",
-        "yearly_theoretical_total_energy_consumption",
-        "surface_of_the_plot",
-        "building_condition",
-        "city",
-        "lat",
-        "cadastral_income",
-        "living_area",
-    ]
-
-    most_recent_data = list(utils.Configuration.GIT_DATA.glob("*.gzip"))[-1]
-    most_recent_data_df = pd.read_parquet(most_recent_data)[columns_to_select]
-
-    return most_recent_data_df
-
-
-def get_historical_model_performance() -> Tuple[float, float, float]:
-    """
-    Retrieve the average RMSE, R2 values, and the date of the most recent
-      record from historical model performance data.
-
-    Returns:
-        Tuple[float, float, str]: A tuple containing the average RMSE, average R2,
-        and the date of the most recent record.
-    """
-    # Load historical model performance data from a Parquet file
-    performance_data = pd.read_parquet(
-        utils.Configuration.GIT_MODEL_PERFORMANCE.joinpath(
-            "model_performance.parquet.gzip"
-        )
-    )
-
-    # Calculate the average RMSE and R2
-    RMSE = performance_data["RMSE"].mean()
-    R2 = performance_data["R2"].mean()
-
-    # Extract the date of the most recent record
-    date = performance_data["date"].tail(1).values[0]
-
-    return RMSE, R2, date
-
-
-def get_st_metrics() -> Tuple[float, float]:
-    """
-    Load historical model performance data from a Parquet file and extract RMSE values.
-
-    Returns:
-        Tuple[float, float]: A tuple containing the RMSE value for the most recent record
-        and the second-to-last record.
-    """
-    # Load historical model performance data from a Parquet file
-    performance_data = pd.read_parquet(
-        utils.Configuration.GIT_MODEL_PERFORMANCE.joinpath(
-            "model_performance.parquet.gzip"
-        )
-    )
-
-    # Extract the date of the most recent record
-    second_to_last_RMSE = performance_data["RMSE"].tail(2).values[0]
-    last_RMSE = performance_data["RMSE"].tail(1).values[0]
-
-    return last_RMSE, second_to_last_RMSE
-
-
 @st.cache_resource
-def fetch_model() -> catboost.CatBoostRegressor:
+def fetch_model():
     """
     Load and return a CatBoost regression model.
 
     Returns:
         catboost.CatBoostRegressor: The loaded CatBoost regression model.
     """
-    model = catboost.CatBoostRegressor()
-    model.load_model(utils.Configuration.GIT_MODEL.joinpath("catboost_model"))
+    model = joblib.load(utils.Configuration.MODEL.joinpath("mapie_model.pkl"))
 
     return model
 
@@ -143,25 +63,6 @@ try:
         """Please enter the input features below. While you're _not required_ to provide values for all the listed variables,
                  for the most accurate predictions based on what the model has learned, try to be as specific as possible."""
     )
-    with st.sidebar:
-        AVG_RMSE, AVG_R2, last_train_date = get_historical_model_performance()
-        st.header("Historical Model Performance Summary")
-        last_RMSE, second_to_last_RMSE = get_st_metrics()
-        st.metric(
-            value=f"{last_RMSE:.4f}",
-            delta=f"{last_RMSE - second_to_last_RMSE:.4f}",
-            label="Last Test Set RMSE",
-            delta_color="inverse",
-        )
-        st.write(
-            f"""* Last Model Training Date: **{last_train_date}**
-* Average Test Set RMSE: **{AVG_RMSE:.4f}**
-* Average Test Set R2: **{AVG_R2:.4f}**
-
-    """
-        )
-    with st.spinner("Loading data..."):
-        most_recent_data_df = fetch_data()
 
     with st.expander("click to expand"):
         col1, col2, col3 = st.columns(spec=3, gap="large")
@@ -170,32 +71,18 @@ try:
             st.markdown("#### Geography")
             state = st.selectbox(
                 "In which region is the house located?",
-                ((most_recent_data_df.state.unique())),
-            )
-            city = st.selectbox(
-                "In which city is it situated?", ((most_recent_data_df.city.unique()))
-            )
-            street = st.selectbox(
-                "On which street is it situated?",
-                ((most_recent_data_df.street.unique())),
+                ([0, 1, 2]),
             )
 
-            lat = st.number_input(
-                "What is the estimated latitude of the location?",
-                step=1.0,
-                format="%.4f",
-            )
-            lng = st.number_input(
-                "What is the estimated longitude of the location?",
-                step=1.0,
-                format="%.4f",
+            zip_code = st.number_input(
+                "What is the zip code of the property?", step=1.0, format="%.0f"
             )
 
         with col2:
             st.markdown("#### Construction")
             building_condition = st.selectbox(
                 "What is the condition of the building?",
-                ((most_recent_data_df.building_condition.unique())),
+                ([0, 1, 2]),
             )
             bedrooms = st.number_input(
                 "How many bedrooms does the property have?", step=1.0, format="%.0f"
@@ -241,8 +128,6 @@ try:
         "bedrooms": [bedrooms],
         "state": [state],
         "number_of_frontages": [number_of_frontages],
-        "street": [street],
-        "lng": [lng],
         "primary_energy_consumption": [primary_energy_consumption],
         "bathrooms": [bathrooms],
         "yearly_theoretical_total_energy_consumption": [

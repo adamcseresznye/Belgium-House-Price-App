@@ -11,7 +11,7 @@ from sklearn import (
     preprocessing,
 )
 
-import feature_pipeline
+import preprocessing_transformers
 
 
 def create_tuned_pipeline(X_train, y_train, random_seed=None):
@@ -21,7 +21,7 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
     optimal_bins = int(np.floor(np.log2(X_train.shape[0])) + 1)
 
     categorical_column_transformer = pipeline.make_pipeline(
-        feature_pipeline.CategoricalColumnTransformer(
+        preprocessing_transformers.CategoricalColumnTransformer(
             categorical_feature="building_condition",
             numerical_feature="construction_year",
             transform_type="mean",
@@ -30,7 +30,7 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
     )
 
     continuous_discretizer = pipeline.make_pipeline(
-        feature_pipeline.ContinuousColumnTransformer(
+        preprocessing_transformers.ContinuousColumnTransformer(
             continuous_feature_to_bin="bathrooms",
             continuous_feature_to_transfer="number_of_frontages",
             transform_type="mean",

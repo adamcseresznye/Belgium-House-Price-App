@@ -1,22 +1,17 @@
 import sys
 from pathlib import Path
-from typing import List, Optional, Set, Tuple, Union
 
-import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import requests
-import statsmodels.api as sm
 import streamlit as st
-import streamlit.components.v1 as components
+from feature_pipeline import remove_outliers
 from pandas.api.types import is_numeric_dtype
+from prepare_data import preprocess_and_split_data, retrieve_data_from_MongoDB
 from pymongo import MongoClient
 from pymongoarrow.api import find_pandas_all
-from sklearn import compose, impute, neighbors, pipeline, preprocessing
 
 import creds
-import data
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -32,31 +27,28 @@ st.set_page_config(
     },
 )
 
-st.sidebar.subheader("📢 Get in touch 📢")
-cols1, cols2, cols3 = st.sidebar.columns(3)
-cols1.markdown(
-    "[![Foo](https://cdn3.iconfinder.com/data/icons/picons-social/57/11-linkedin-48.png)](https://www.linkedin.com/in/adam-cseresznye)"
-)
-cols2.markdown(
-    "[![Foo](https://cdn1.iconfinder.com/data/icons/picons-social/57/github_rounded-48.png)](https://github.com/adamcseresznye)"
-)
-cols3.markdown(
-    "[![Foo](https://cdn2.iconfinder.com/data/icons/threads-by-instagram/24/x-logo-twitter-new-brand-48.png)](https://twitter.com/csenye22)"
-)
-
 HEIGHT = 400
+WIDTH = 500
+TITLE_FONT_SIZE = 28
 
 
 @st.cache_data
-def retrieve_data_and_exclude_columns(
+def cached_retrieve_data_from_MongoDB(
     db_name, collection_name, query, columns_to_exclude
 ):
-    cluster = MongoClient(creds.Creds.URI)
-    db = cluster[db_name]
-    collection = db[collection_name]
-    df = find_pandas_all(collection, query)
-    df = df.drop(columns=columns_to_exclude)
-    return df.query("price > 100000")
+    return retrieve_data_from_MongoDB(
+        db_name, collection_name, query, columns_to_exclude
+    )
+
+
+@st.cache_data
+def cached_preprocess_and_split_data(df):
+    return preprocess_and_split_data(df)
+
+
+@st.cache_data
+def cached_remove_outliers(X, y):
+    return remove_outliers(X, y)
 
 
 @st.cache_data
@@ -94,7 +86,7 @@ def get_choropleth(data, feature, BE_map):
         color=feature,
         featureidkey="properties.name",
         projection="mercator",
-        color_continuous_scale="Magenta",
+        color_continuous_scale="Peach",
     )
 
     fig.update_geos(
@@ -108,9 +100,8 @@ def get_choropleth(data, feature, BE_map):
         title_text=title_text,
         coloraxis_colorbar_title_text=f"{feature.replace('_', ' ').title()}",
         autosize=False,
-        title_font=dict(size=24),
-        # coloraxis_showscale=False,
-        # width=600,
+        title_font=dict(size=TITLE_FONT_SIZE),
+        width=WIDTH,
         height=HEIGHT,
         margin=dict(l=0, r=0, b=0, t=40),
         geo=dict(showframe=False, showcoastlines=False, projection_type="mercator"),
@@ -126,10 +117,11 @@ def get_stats_plot(data, feature):
             y="price",
             trendline="lowess",
             template="plotly_dark",
-            title=f"Analyzing the Effect of {feature.replace('_', ' ').title()} on House Prices",
+            title=f"Effect of {feature.replace('_', ' ').title()} on House Prices",
             trendline_color_override="#c91e01",
             opacity=0.5,
             height=HEIGHT,
+            width=WIDTH,
             labels={
                 feature: feature.replace("_", " ").title(),
                 "price": "Price in Log10-Scale (EUR)",
@@ -146,76 +138,133 @@ def get_stats_plot(data, feature):
             template="plotly_dark",
             log_y=True,
             category_orders=sorted_index,
-            title=f"Analyzing the Effect of {feature.replace('_', ' ').title()} on House Prices",
+            height=HEIGHT,
+            width=WIDTH,
+            title=f"Effect of {feature.replace('_', ' ').title()} on House Prices",
             labels={
                 "price": "Price in Log10-Scale (EUR)",
                 feature: f"{feature.replace('_', ' ').title()}",
             },
         )
         plot.update_xaxes(categoryorder="array", categoryarray=sorted_index)
+    plot.update_layout(
+        autosize=False,
+        title_font=dict(size=TITLE_FONT_SIZE),
+        width=WIDTH,
+        height=HEIGHT,
+        margin=dict(l=0, r=0, b=0, t=40),
+    )
 
     return plot
 
 
-df = retrieve_data_and_exclude_columns(
-    "development", "BE_houses", {"day_of_retrieval": "2024-02-09"}, "_id"
-)
+def main():
+    with st.spinner("Retrieving data from the database..."):
+        df = cached_retrieve_data_from_MongoDB(
+            db_name="development",
+            collection_name="BE_houses",
+            query={"day_of_retrieval": "2024-02-09"},
+            columns_to_exclude="_id",
+        )
+        X, y = cached_remove_outliers(*cached_preprocess_and_split_data(df))
+        df = pd.concat([X, 10**y], axis=1)
 
-BE_provinces = get_BE_provice_map()
+    BE_provinces = get_BE_provice_map()
 
-selected_feature = st.sidebar.selectbox(
-    "Feature to investigate",
-    df.select_dtypes("number")
-    .drop(columns=["price"])
-    .columns.str.replace("_", " ")
-    .str.capitalize(),
-)
+    selected_feature = st.sidebar.selectbox(
+        "Feature to investigate",
+        df.select_dtypes("number")
+        .drop(columns=["price", "zip_code"])
+        .columns.str.replace("_", " ")
+        .str.capitalize(),
+    )
 
-converted_selected_feature = selected_feature.replace(" ", "_").lower()
+    converted_selected_feature = selected_feature.replace(" ", "_").lower()
 
+    def format_number(num):
+        if num > 1000000:
+            if not num % 1000000:
+                return f"{num // 1000000} M"
+            return f"{round(num / 1000000, 1)} M"
+        return f"{int(num // 1000)} K"
 
-def format_number(num):
-    if num > 1000000:
-        if not num % 1000000:
-            return f"{num // 1000000} M"
-        return f"{round(num / 1000000, 1)} M"
-    return f"{int(num // 1000)} K"
+    col1, col2, col3 = st.columns([1, 1, 1], gap="small")
 
+    with col1:
+        median_price_aggregate_fig = get_choropleth(df, "price", BE_provinces)
+        st.plotly_chart(median_price_aggregate_fig)
 
-col1, col2, col3 = st.columns([1, 1, 1], gap="small")
+        st.markdown("### What defines the typical property in Belgium?")
+        median_values = df[
+            ["price", "primary_energy_consumption", "living_area", "construction_year"]
+        ].median()
 
-with col1:
-    median_price_aggregate_fig = get_choropleth(df, "price", BE_provinces)
-    st.plotly_chart(median_price_aggregate_fig)
+        subcol1, subcol2 = st.columns(2, gap="small")
+        with subcol1:
+            st.metric("Price (€)", format_number(median_values["price"]))
+            st.metric(
+                "Energy Consumption (kWh/m²)",
+                int(median_values["primary_energy_consumption"]),
+            )
 
-    st.subheader("What defines the typical property in Belgium?")
-    median_values = df[
-        ["price", "primary_energy_consumption", "living_area", "construction_year"]
-    ].median()
+        with subcol2:
+            st.metric("Living Area (m²)", int(median_values["living_area"]))
+            st.metric("Construction Year", int(median_values["construction_year"]))
 
-    subcol1, subcol2 = st.columns(2, gap="small")
-    with subcol1:
-        st.metric("Price (€)", format_number(median_values["price"]))
-        st.metric(
-            "Energy Consumption (kWh/m²)",
-            int(median_values["primary_energy_consumption"]),
+    with col2:
+        selectable_feature_aggregate_fig = get_choropleth(
+            df, converted_selected_feature, BE_provinces
+        )
+        st.plotly_chart(selectable_feature_aggregate_fig)
+
+        stats_plot = get_stats_plot(df, converted_selected_feature)
+        st.plotly_chart(stats_plot)
+
+    with col3:
+        number_of_ads_fig = get_choropleth(df, "number_of_ads", BE_provinces)
+        st.plotly_chart(number_of_ads_fig)
+        st.markdown("### Fun facts about the dataset")
+
+        oldest_house = df.sort_values(by="construction_year").head(1)
+        most_expensive_house = df.sort_values(by="price", ascending=False).head(1)
+        energy_ratings = df.energy_class.value_counts(normalize=True)
+        energy_ratings_B_above = (
+            df.query("energy_class.str.contains('A|B')").province.value_counts()
+            / df.province.value_counts()
+        ).sort_values(ascending=False)
+
+        st.markdown(f" - There are **{df.shape[0]}** ads in the dataset.")
+        st.markdown(
+            f" - The oldest house was built in **{int(oldest_house.construction_year.values[0])}** and it is located in **{oldest_house.zip_code.values[0]}, {oldest_house.province.values[0]}**."
+        )
+        st.markdown(
+            f"- The most expensive house costs **€{int(most_expensive_house.price.values[0])}** and it is located in **{most_expensive_house.zip_code.values[0]}, {most_expensive_house.province.values[0]}**."
+        )
+        st.markdown(
+            f"- The most common energy rating is **{energy_ratings.head(1).index[0]}**, accounting for **{energy_ratings.head(1).values[0]:.1%}** of the ads."
+        )
+        st.markdown(
+            f"- **{energy_ratings.filter(regex='A|B', axis = 0).sum():.1%}** of the houses have energy efficiency ratings of **B and above**."
+        )
+        st.markdown(
+            f"- The most energy efficient (% houses with a score of B or above) province is **{energy_ratings_B_above.head(1).index[0]} ({energy_ratings_B_above.head(1).values[0]:.1%})**."
+        )
+        st.markdown(
+            f"- The least energy efficient province is **{energy_ratings_B_above.tail(1).index[0]} ({energy_ratings_B_above.tail(1).values[0]:.1%})**."
         )
 
-    with subcol2:
-        st.metric("Living Area (m²)", int(median_values["living_area"]))
-        st.metric("Construction Year", int(median_values["construction_year"]))
-
-
-with col2:
-    selectable_feature_aggregate_fig = get_choropleth(
-        df, converted_selected_feature, BE_provinces
+    st.sidebar.subheader("📢 Get in touch 📢")
+    cols1, cols2, cols3 = st.sidebar.columns(3)
+    cols1.markdown(
+        "[![Foo](https://cdn3.iconfinder.com/data/icons/picons-social/57/11-linkedin-48.png)](https://www.linkedin.com/in/adam-cseresznye)"
     )
-    st.plotly_chart(selectable_feature_aggregate_fig)
+    cols2.markdown(
+        "[![Foo](https://cdn1.iconfinder.com/data/icons/picons-social/57/github_rounded-48.png)](https://github.com/adamcseresznye)"
+    )
+    cols3.markdown(
+        "[![Foo](https://cdn2.iconfinder.com/data/icons/threads-by-instagram/24/x-logo-twitter-new-brand-48.png)](https://twitter.com/csenye22)"
+    )
 
-    stats_plot = get_stats_plot(df, converted_selected_feature)
-    st.plotly_chart(stats_plot)
 
-
-with col3:
-    number_of_ads_fig = get_choropleth(df, "number_of_ads", BE_provinces)
-    st.plotly_chart(number_of_ads_fig)
+if __name__ == "__main__":
+    main()
