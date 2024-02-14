@@ -32,7 +32,7 @@ WIDTH = 500
 TITLE_FONT_SIZE = 28
 
 
-@st.cache_data
+@st.cache_resource
 def cached_retrieve_data_from_MongoDB(
     db_name, collection_name, query, columns_to_exclude
 ):
@@ -177,93 +177,104 @@ def main():
         .drop(columns=["price", "zip_code"])
         .columns.str.replace("_", " ")
         .str.capitalize(),
+        index=None,
+        placeholder="Select a feature...",
     )
 
-    converted_selected_feature = selected_feature.replace(" ", "_").lower()
+    if selected_feature is None:
+        st.info("Select a feature from the sidebar", icon="ℹ️")
 
-    def format_number(num):
-        if num > 1000000:
-            if not num % 1000000:
-                return f"{num // 1000000} M"
-            return f"{round(num / 1000000, 1)} M"
-        return f"{int(num // 1000)} K"
+    if selected_feature:
+        converted_selected_feature = selected_feature.replace(" ", "_").lower()
 
-    col1, col2, col3 = st.columns([1, 1, 1], gap="small")
+        def format_number(num):
+            if num > 1000000:
+                if not num % 1000000:
+                    return f"{num // 1000000} M"
+                return f"{round(num / 1000000, 1)} M"
+            return f"{int(num // 1000)} K"
 
-    with col1:
-        median_price_aggregate_fig = get_choropleth(df, "price", BE_provinces)
-        st.plotly_chart(median_price_aggregate_fig)
+        col1, col2, col3 = st.columns([1, 1, 1], gap="small")
 
-        st.markdown("### What defines the typical property in Belgium?")
-        median_values = df[
-            ["price", "primary_energy_consumption", "living_area", "construction_year"]
-        ].median()
+        with col1:
+            median_price_aggregate_fig = get_choropleth(df, "price", BE_provinces)
+            st.plotly_chart(median_price_aggregate_fig)
 
-        subcol1, subcol2 = st.columns(2, gap="small")
-        with subcol1:
-            st.metric("Price (€)", format_number(median_values["price"]))
-            st.metric(
-                "Energy Consumption (kWh/m²)",
-                int(median_values["primary_energy_consumption"]),
+            st.markdown("### What defines the typical property in Belgium?")
+            median_values = df[
+                [
+                    "price",
+                    "primary_energy_consumption",
+                    "living_area",
+                    "construction_year",
+                ]
+            ].median()
+
+            subcol1, subcol2 = st.columns(2, gap="small")
+            with subcol1:
+                st.metric("Price (€)", format_number(median_values["price"]))
+                st.metric(
+                    "Energy Consumption (kWh/m²)",
+                    int(median_values["primary_energy_consumption"]),
+                )
+
+            with subcol2:
+                st.metric("Living Area (m²)", int(median_values["living_area"]))
+                st.metric("Construction Year", int(median_values["construction_year"]))
+
+        with col2:
+            selectable_feature_aggregate_fig = get_choropleth(
+                df, converted_selected_feature, BE_provinces
+            )
+            st.plotly_chart(selectable_feature_aggregate_fig)
+
+            stats_plot = get_stats_plot(df, converted_selected_feature)
+            st.plotly_chart(stats_plot)
+
+        with col3:
+            number_of_ads_fig = get_choropleth(df, "number_of_ads", BE_provinces)
+            st.plotly_chart(number_of_ads_fig)
+            st.markdown("### Fun facts about the dataset")
+
+            oldest_house = df.sort_values(by="construction_year").head(1)
+            most_expensive_house = df.sort_values(by="price", ascending=False).head(1)
+            energy_ratings = df.energy_class.value_counts(normalize=True)
+            energy_ratings_B_above = (
+                df.query("energy_class.str.contains('A|B')").province.value_counts()
+                / df.province.value_counts()
+            ).sort_values(ascending=False)
+
+            st.markdown(f" - There are **{df.shape[0]}** ads in the dataset.")
+            st.markdown(
+                f" - The oldest house was built in **{int(oldest_house.construction_year.values[0])}** and it is located in **{oldest_house.zip_code.values[0]}, {oldest_house.province.values[0]}**."
+            )
+            st.markdown(
+                f"- The most expensive house costs **€{int(most_expensive_house.price.values[0])}** and it is located in **{most_expensive_house.zip_code.values[0]}, {most_expensive_house.province.values[0]}**."
+            )
+            st.markdown(
+                f"- The most common energy rating is **{energy_ratings.head(1).index[0]}**, accounting for **{energy_ratings.head(1).values[0]:.1%}** of the ads."
+            )
+            st.markdown(
+                f"- **{energy_ratings.filter(regex='A|B', axis = 0).sum():.1%}** of the houses have energy efficiency ratings of **B and above**."
+            )
+            st.markdown(
+                f"- The most energy efficient (% houses with a score of B or above) province is **{energy_ratings_B_above.head(1).index[0]} ({energy_ratings_B_above.head(1).values[0]:.1%})**."
+            )
+            st.markdown(
+                f"- The least energy efficient province is **{energy_ratings_B_above.tail(1).index[0]} ({energy_ratings_B_above.tail(1).values[0]:.1%})**."
             )
 
-        with subcol2:
-            st.metric("Living Area (m²)", int(median_values["living_area"]))
-            st.metric("Construction Year", int(median_values["construction_year"]))
-
-    with col2:
-        selectable_feature_aggregate_fig = get_choropleth(
-            df, converted_selected_feature, BE_provinces
+        st.sidebar.subheader("📢 Get in touch 📢")
+        cols1, cols2, cols3 = st.sidebar.columns(3)
+        cols1.markdown(
+            "[![Foo](https://cdn3.iconfinder.com/data/icons/picons-social/57/11-linkedin-48.png)](https://www.linkedin.com/in/adam-cseresznye)"
         )
-        st.plotly_chart(selectable_feature_aggregate_fig)
-
-        stats_plot = get_stats_plot(df, converted_selected_feature)
-        st.plotly_chart(stats_plot)
-
-    with col3:
-        number_of_ads_fig = get_choropleth(df, "number_of_ads", BE_provinces)
-        st.plotly_chart(number_of_ads_fig)
-        st.markdown("### Fun facts about the dataset")
-
-        oldest_house = df.sort_values(by="construction_year").head(1)
-        most_expensive_house = df.sort_values(by="price", ascending=False).head(1)
-        energy_ratings = df.energy_class.value_counts(normalize=True)
-        energy_ratings_B_above = (
-            df.query("energy_class.str.contains('A|B')").province.value_counts()
-            / df.province.value_counts()
-        ).sort_values(ascending=False)
-
-        st.markdown(f" - There are **{df.shape[0]}** ads in the dataset.")
-        st.markdown(
-            f" - The oldest house was built in **{int(oldest_house.construction_year.values[0])}** and it is located in **{oldest_house.zip_code.values[0]}, {oldest_house.province.values[0]}**."
+        cols2.markdown(
+            "[![Foo](https://cdn1.iconfinder.com/data/icons/picons-social/57/github_rounded-48.png)](https://github.com/adamcseresznye)"
         )
-        st.markdown(
-            f"- The most expensive house costs **€{int(most_expensive_house.price.values[0])}** and it is located in **{most_expensive_house.zip_code.values[0]}, {most_expensive_house.province.values[0]}**."
+        cols3.markdown(
+            "[![Foo](https://cdn2.iconfinder.com/data/icons/threads-by-instagram/24/x-logo-twitter-new-brand-48.png)](https://twitter.com/csenye22)"
         )
-        st.markdown(
-            f"- The most common energy rating is **{energy_ratings.head(1).index[0]}**, accounting for **{energy_ratings.head(1).values[0]:.1%}** of the ads."
-        )
-        st.markdown(
-            f"- **{energy_ratings.filter(regex='A|B', axis = 0).sum():.1%}** of the houses have energy efficiency ratings of **B and above**."
-        )
-        st.markdown(
-            f"- The most energy efficient (% houses with a score of B or above) province is **{energy_ratings_B_above.head(1).index[0]} ({energy_ratings_B_above.head(1).values[0]:.1%})**."
-        )
-        st.markdown(
-            f"- The least energy efficient province is **{energy_ratings_B_above.tail(1).index[0]} ({energy_ratings_B_above.tail(1).values[0]:.1%})**."
-        )
-
-    st.sidebar.subheader("📢 Get in touch 📢")
-    cols1, cols2, cols3 = st.sidebar.columns(3)
-    cols1.markdown(
-        "[![Foo](https://cdn3.iconfinder.com/data/icons/picons-social/57/11-linkedin-48.png)](https://www.linkedin.com/in/adam-cseresznye)"
-    )
-    cols2.markdown(
-        "[![Foo](https://cdn1.iconfinder.com/data/icons/picons-social/57/github_rounded-48.png)](https://github.com/adamcseresznye)"
-    )
-    cols3.markdown(
-        "[![Foo](https://cdn2.iconfinder.com/data/icons/threads-by-instagram/24/x-logo-twitter-new-brand-48.png)](https://twitter.com/csenye22)"
-    )
 
 
 if __name__ == "__main__":

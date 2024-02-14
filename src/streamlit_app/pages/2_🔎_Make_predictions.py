@@ -18,6 +18,7 @@ st.set_page_config(
     page_title="Make predictions",
     page_icon="🔎",
     initial_sidebar_state="expanded",
+    layout="wide",
     menu_items={
         "Get Help": "https://adamcseresznye.github.io/blog/",
         "Report a bug": "https://github.com/adamcseresznye/house_price_prediction",
@@ -53,12 +54,8 @@ cols3.markdown(
 
 try:
     st.header("Generate Home Price Prediction")
-    st.image(
-        "https://cf.bstatic.com/xdata/images/hotel/max1024x768/408003083.jpg?k=c49b5c4a2346b3ab002b9d1b22dbfb596cee523b53abef2550d0c92d0faf2d8b&o=&hp=1",
-        caption="Photo by Stephen Phillips - Hostreviews.co.uk on UnSplash",
-        use_column_width="always",
-    )
     st.subheader("Input Feature Values")
+
     st.markdown(
         """Please enter the input features below. While you're _not required_ to provide values for all the listed variables,
                  for the most accurate predictions based on what the model has learned, try to be as specific as possible."""
@@ -69,76 +66,145 @@ try:
 
         with col1:
             st.markdown("#### Geography")
-            state = st.selectbox(
+            province = st.selectbox(
                 "In which region is the house located?",
-                ([0, 1, 2]),
+                (
+                    [
+                        "Liege",
+                        "East Flanders",
+                        "Brussels",
+                        "Antwerp",
+                        "Flemish Brabant",
+                        "Walloon Brabant",
+                        "Hainaut",
+                        "Luxembourg",
+                        "West Flanders",
+                        "Namur",
+                        "Limburg",
+                    ]
+                ),
             )
 
             zip_code = st.number_input(
-                "What is the zip code of the property?", step=1.0, format="%.0f"
+                "What is the zip code of the property?",
+                step=1.0,
+                format="%.0f",
+                value=None,
+                placeholder="Type a number...",
             )
 
         with col2:
             st.markdown("#### Construction")
-            building_condition = st.selectbox(
-                "What is the condition of the building?",
-                ([0, 1, 2]),
-            )
             bedrooms = st.number_input(
-                "How many bedrooms does the property have?", step=1.0, format="%.0f"
+                "How many bedrooms does the property have?",
+                step=1.0,
+                format="%.0f",
+                value=None,
+                placeholder="Type a number...",
+            )
+            toilets = st.number_input(
+                "How many toilets does the property have?",
+                step=1.0,
+                format="%.0f",
+                value=None,
+                placeholder="Type a number...",
             )
             bathrooms = st.number_input(
-                "How many bathrooms does the property have?", step=1.0, format="%.0f"
+                "How many bathrooms does the property have?",
+                step=1.0,
+                format="%.0f",
+                value=None,
+                placeholder="Type a number...",
             )
             number_of_frontages = st.number_input(
                 "What is the count of frontages for this property?",
                 step=1.0,
                 format="%.0f",
+                value=None,
+                placeholder="Type a number...",
             )
             surface_of_the_plot = st.number_input(
                 "What is the total land area associated with this property in m2?",
                 step=1.0,
                 format="%.1f",
+                value=None,
+                placeholder="Type a number...",
             )
             living_area = st.number_input(
                 "What is the living area or the space designated for living within the property in m2?",
                 step=1.0,
                 format="%.1f",
+                value=None,
+                placeholder="Type a number...",
+            )
+            tenement_building = st.selectbox(
+                "Is it in a tenement building?", ["Yes", "No"]
             )
 
         with col3:
-            st.markdown("#### Energy, Taxes")
-            yearly_theoretical_total_energy_consumption = st.number_input(
-                "What is the estimated annual total energy consumption for this property?",
-                step=1.0,
-                format="%.1f",
-            )
+            st.markdown("#### Energy")
             primary_energy_consumption = st.number_input(
                 "What is the primary energy consumption associated with this property?",
                 step=1.0,
                 format="%.1f",
+                value=None,
+                placeholder="Type a number...",
             )
-            cadastral_income = st.number_input(
-                "What is the cadastral income or property tax assessment value for this property?",
+            energy_class = st.selectbox(
+                "What is the energy rating the building?",
+                ["F", "B", "C", "A", "D", "E", "G", "Not specified", "A+", "A++"],
+            )
+            double_glazing = st.selectbox(
+                "Does the property have double glazing?", ["Yes", "No"]
+            )
+            heating_type = st.selectbox(
+                "What is the heating type of the property?",
+                [
+                    "Gas",
+                    "Electric",
+                    "Fuel oil",
+                    "missing",
+                    "Solar",
+                    "Pellet",
+                    "Wood",
+                    "Carbon",
+                ],
+            )
+            construction_year = st.number_input(
+                "What is the construction year of the property?",
                 step=1.0,
-                format="%.1f",
+                format="%.0f",
+                value=None,
+                placeholder="Type a number...",
+            )
+            building_condition = st.selectbox(
+                "What is the condition of the building?",
+                [
+                    "To be done up",
+                    "As new",
+                    "Good",
+                    "To renovate",
+                    "Just renovated",
+                    "To restore",
+                ],
             )
 
     data = {
-        "bedrooms": [bedrooms],
-        "state": [state],
-        "number_of_frontages": [number_of_frontages],
-        "primary_energy_consumption": [primary_energy_consumption],
-        "bathrooms": [bathrooms],
-        "yearly_theoretical_total_energy_consumption": [
-            yearly_theoretical_total_energy_consumption
-        ],
-        "surface_of_the_plot": [surface_of_the_plot],
+        "province": [province],
+        "zip_code": [zip_code],
         "building_condition": [building_condition],
-        "city": [city],
-        "lat": [lat],
-        "cadastral_income": [cadastral_income],
+        "bedrooms": [bedrooms],
+        "toilets": [toilets],
+        "bathrooms": [bathrooms],
+        "number_of_frontages": [number_of_frontages],
+        "surface_of_the_plot": [surface_of_the_plot],
         "living_area": [living_area],
+        "tenement_building": [tenement_building],
+        "double_glazing": [double_glazing],
+        "heating_type": [heating_type],
+        "construction_year": [construction_year],
+        "primary_energy_consumption": [primary_energy_consumption],
+        "energy_class": [energy_class],
     }
     X_test = pd.DataFrame(data)
 
@@ -147,9 +213,9 @@ try:
     click = st.button("Predict house price", key="start-button")
 
     if click:
-        prediction = predict_model.predict_catboost(model=model, X=X_test)
+        y_pred, y_pis = model.predict(X_test, alpha=0.1)
         st.success(
-            f"The predicted price for the house is {10** prediction[0]:,.0f} EUR."
+            f"The property’s estimated price is €{10** y_pred[0]:,.0f}, with a 90% probability of ranging from €{10**y_pis.flatten()[0]:,.0f} to €{10**y_pis.flatten()[1]:,.0f}."
         )
 
 

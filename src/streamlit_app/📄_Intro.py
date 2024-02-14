@@ -15,6 +15,7 @@ st.set_page_config(
     page_title="House Price Prediction",
     page_icon="📄",
     initial_sidebar_state="expanded",
+    layout="wide",
     menu_items={
         "Get Help": "https://adamcseresznye.github.io/blog/",
         "Report a bug": "https://github.com/adamcseresznye/house_price_prediction",
@@ -59,6 +60,7 @@ def main():
     st.image(
         image,
         caption="Data Acquisition, Processing, Model Training, and Performance Testing Workflow.",
+        width=800,
     )
     st.markdown(
         """From the diagram, you can see that our data processing pipeline adheres to the traditional Extract, Transform, and Load (ETL) process.
