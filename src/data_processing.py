@@ -6,8 +6,13 @@ from pymongoarrow.api import find_pandas_all
 import creds
 
 
-def retrieve_data_from_MongoDB(db_name, collection_name, query, columns_to_exclude):
-    cluster = MongoClient(creds.Creds.URI)
+def retrieve_data_from_MongoDB(
+    db_name,
+    collection_name,
+    query,
+    columns_to_exclude,
+    cluster=MongoClient(creds.Creds.URI),
+):
     db = cluster[db_name]
     collection = db[collection_name]
     df = find_pandas_all(collection, query)

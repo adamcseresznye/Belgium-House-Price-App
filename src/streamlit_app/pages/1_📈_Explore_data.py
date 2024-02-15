@@ -16,7 +16,7 @@ import creds
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(
-    page_title="Explore the data",
+    page_title="House Price Prediction : Explore the data",
     page_icon="📈",
     initial_sidebar_state="expanded",
     layout="wide",
@@ -263,18 +263,6 @@ def main():
             st.markdown(
                 f"- The least energy efficient province is **{energy_ratings_B_above.tail(1).index[0]} ({energy_ratings_B_above.tail(1).values[0]:.1%})**."
             )
-
-        st.sidebar.subheader("📢 Get in touch 📢")
-        cols1, cols2, cols3 = st.sidebar.columns(3)
-        cols1.markdown(
-            "[![Foo](https://cdn3.iconfinder.com/data/icons/picons-social/57/11-linkedin-48.png)](https://www.linkedin.com/in/adam-cseresznye)"
-        )
-        cols2.markdown(
-            "[![Foo](https://cdn1.iconfinder.com/data/icons/picons-social/57/github_rounded-48.png)](https://github.com/adamcseresznye)"
-        )
-        cols3.markdown(
-            "[![Foo](https://cdn2.iconfinder.com/data/icons/threads-by-instagram/24/x-logo-twitter-new-brand-48.png)](https://twitter.com/csenye22)"
-        )
 
 
 if __name__ == "__main__":

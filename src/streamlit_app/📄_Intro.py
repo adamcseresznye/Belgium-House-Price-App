@@ -12,7 +12,7 @@ import utils
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 st.set_page_config(
-    page_title="House Price Prediction",
+    page_title="House Price Prediction : Intro",
     page_icon="📄",
     initial_sidebar_state="expanded",
     layout="wide",
@@ -25,17 +25,19 @@ st.set_page_config(
 
 
 def main():
-    st.write("# Forecast Belgian Property Prices with CatBoost!")
-
-    st.subheader("Introduction")
+    st.write("# House Price Prediction")
 
     st.markdown(
         """
+        [![Star](https://img.shields.io/github/stars/adamcseresznye/Belgian-House-Price-Predictor)](https://gitHub.com/adamcseresznye/traingenerator/Belgian-House-Price-Predictor)
+        [![Follow](https://img.shields.io/twitter/follow/csenye22?style=social)](https://www.twitter.com/csenye22)
+
         This app is designed to predict house prices in Belgium using data gathered from [immoweb.be](https://www.immoweb.be/en), a prominent real
-        estate platform in the country. Leveraging a CatBoost model, we aim to offer accurate and current price predictions.
+        estate platform in the country. Leveraging a CatBoost model with MAPIE, we aim to offer accurate and current price predictions with prediction intervals based on conformal prediction.
         Explore the housing market and make informed choices with our prediction tool.
     """
     )
+    st.subheader("Introduction")
 
     file_path = Path(__file__).parent
     image_path = file_path.joinpath("diagram.png")
@@ -44,17 +46,23 @@ def main():
     st.subheader("Describing the Workflow")
     st.info(
         """
-            For an in-depth exploration of the pipeline's creation, encompassing
-            [data preparation](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%201_Feature%20Selection%20for%20Web%20Scraping/NB_1_ACs_Select_features_for_scraping.html),
-            [cleaning](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%202_Basic_clean_up_after_scraping/NB_2_ACs_Basic_clean_up_after_scraping.html),
-            [feature generation](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%206_Feature_engineering/NB_6_ACs_Feature_engineering.html),
-            [feature importance assessment](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%205_Initial_feature_selection/NB_5_ACs_Initial_feature_selection.html),
-            [model training](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%204_Building_a_baseline_model/NB_4_ACs_Building_a_baseline_model.html),
-            [fine-tuning](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%207_Fine_tuning/NB_7_ACs_Fine_tuning.html)
-            and more, feel free to explore my
-            [seven-part series of articles](https://adamcseresznye.github.io/blog/projects.html).
-            These articles comprehensively walk you through the conceptualization
-            behind the app.
+        This is version 2 of our app, completely redesigned from the ground up.
+
+        **What has changed:**
+        - Data that has been scraped and sanitized is now directly uploaded to our MongoDB database.
+        - The unnecessary features have been eliminated.
+        - Automatic feature selection is included with hyperparameter optimization using GridSearchCV.
+        - Predictions are made with confidence intervals at the 90% level, utilizing conformal prediction.
+
+        For an in-depth exploration of the pipeline's creation of the first version of our app, encompassing
+        [data preparation](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%201_Feature%20Selection%20for%20Web%20Scraping/NB_1_ACs_Select_features_for_scraping.html),
+        [cleaning](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%202_Basic_clean_up_after_scraping/NB_2_ACs_Basic_clean_up_after_scraping.html),
+        [feature generation](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%206_Feature_engineering/NB_6_ACs_Feature_engineering.html),
+        [feature importance assessment](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%205_Initial_feature_selection/NB_5_ACs_Initial_feature_selection.html),
+        [model training](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%204_Building_a_baseline_model/NB_4_ACs_Building_a_baseline_model.html),
+        [fine-tuning](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%207_Fine_tuning/NB_7_ACs_Fine_tuning.html)
+        and more, feel free to explore my
+        [seven-part series of articles](https://adamcseresznye.github.io/blog/projects.html).
             """
     )
     st.image(
@@ -88,13 +96,14 @@ def main():
                 Have fun!🎈🎉😊🐍💻🎈
         """
     )
+    st.subheader("Planned Enhancements")
     st.info(
-        """**Planned Enhancements**:
-    - :white_check_mark: Collaborate with the [Kaggle](https://www.kaggle.com/datasets/unworried1686/belgian-property-prices-2023/data) community. Share initial data and gather insights on potential model improvements and data preprocessing techniques for better predictions.
-    - :construction: Incorporate confidence intervals into predictions.
-    - :construction: Implement data upload to a database for improved data management.
-    - :construction: Explore the inclusion of advertisement time to account for seasonality in the model.
-    - :construction: Improve loading speed.
+        """
+        - :white_check_mark: Collaborate with the [Kaggle](https://www.kaggle.com/datasets/unworried1686/belgian-property-prices-2023/data) community. Share initial data and gather insights on potential model improvements and data preprocessing techniques for better predictions.
+        - :white_check_mark: Incorporate confidence intervals into predictions.
+        - :white_check_mark: Implement data upload to a database for improved data management.
+        - :construction: Explore the inclusion of advertisement time to account for seasonality in the model.
+        - :construction: Make the scraping process faster using asynchronous operations.
     """
     )
 
@@ -102,18 +111,6 @@ def main():
         """Disclaimer: The developer is not liable for the information provided by this app.
             It is intended for educational purposes only. Any use of the information for decision-making or financial
             purposes is at your own discretion and risk."""
-    )
-
-    st.sidebar.subheader("📢 Get in touch 📢")
-    cols1, cols2, cols3 = st.sidebar.columns(3)
-    cols1.markdown(
-        "[![Foo](https://cdn3.iconfinder.com/data/icons/picons-social/57/11-linkedin-48.png)](https://www.linkedin.com/in/adam-cseresznye)"
-    )
-    cols2.markdown(
-        "[![Foo](https://cdn1.iconfinder.com/data/icons/picons-social/57/github_rounded-48.png)](https://github.com/adamcseresznye)"
-    )
-    cols3.markdown(
-        "[![Foo](https://cdn2.iconfinder.com/data/icons/threads-by-instagram/24/x-logo-twitter-new-brand-48.png)](https://twitter.com/csenye22)"
     )
 
 

@@ -1,3 +1,5 @@
+from datetime import date
+
 import catboost
 import numpy as np
 import pandas as pd
@@ -6,6 +8,7 @@ from sklearn import (
     compose,
     feature_selection,
     impute,
+    metrics,
     model_selection,
     pipeline,
     preprocessing,
@@ -94,3 +97,22 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
     grid.fit(X_train, y_train)
 
     return grid.best_estimator_
+
+
+def evaluate_model(model, X_train, y_train, X_test, y_test):
+    AVG_val_score = -np.mean(
+        model_selection.cross_val_score(
+            estimator=model,
+            X=X_train,
+            y=y_train,
+            scoring="neg_root_mean_squared_error",
+            cv=10,
+        )
+    )
+    AVG_test_score = metrics.root_mean_squared_error(y_test, model.predict(X_test))
+
+    return {
+        "date": str(date.today()),
+        "AVG_val_score": AVG_val_score,
+        "AVG_test_score": AVG_test_score,
+    }
