@@ -10,6 +10,7 @@ import plotly.express as px
 import streamlit as st
 
 import utils
+from data_processing import retrieve_data_from_MongoDB
 from models import predict_model
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -29,6 +30,20 @@ st.set_page_config(
 
 
 @st.cache_resource
+def cached_retrieve_data_from_MongoDB(
+    db_name, collection_name, query, columns_to_exclude, cluster=None, most_recent=True
+):
+    return retrieve_data_from_MongoDB(
+        db_name,
+        collection_name,
+        query,
+        columns_to_exclude,
+        cluster=cluster,
+        most_recent=most_recent,
+    )
+
+
+@st.cache_resource
 def fetch_model():
     """
     Load and return a CatBoost regression model.
@@ -41,6 +56,31 @@ def fetch_model():
     return model
 
 
+def display_model_performance(df):
+    melted_df = df.rename(
+        columns={"AVG_val_score": "Validation RMSE", "AVG_test_score": "Test RMSE"}
+    ).melt(id_vars="date")
+    num_unique_dates = int(melted_df.nunique().date)
+
+    fig = px.line(
+        melted_df,
+        "date",
+        "value",
+        color="variable",
+        title="Model Performance over time",
+        width=450,
+        height=350,
+        markers=True,
+    )
+
+    fig.update_xaxes(tickformat="%Y-%m-%d", nticks=num_unique_dates)
+    fig.update_layout(
+        legend_title_text="Metrics",
+        margin=dict(l=0, r=0, b=0, t=30, pad=0),
+    )
+    return fig
+
+
 def main():
     try:
         st.header("Generate Home Price Prediction")
@@ -50,7 +90,6 @@ def main():
             """Please enter the input features below. While you're _not required_ to provide values for all the listed variables,
                     for the most accurate predictions based on what the model has learned, try to be as specific as possible."""
         )
-
         with st.expander("click to expand"):
             col1, col2, col3 = st.columns(spec=3, gap="large")
 
@@ -212,19 +251,16 @@ def main():
                 f"The property’s estimated price is €{10** y_pred[0]:,.0f}, with a 90% probability of ranging from €{10**y_pis.flatten()[0]:,.0f} to €{10**y_pis.flatten()[1]:,.0f}."
             )
 
-        kaka = px.data.gapminder().query("country=='Canada'")
-        fig = px.line(
-            kaka,
-            x="year",
-            y="lifeExp",
-            title="Life expectancy in Canada",
-            width=250,
-            height=400,
+        historical_model_performance = cached_retrieve_data_from_MongoDB(
+            db_name="development",
+            collection_name="model_performance",
+            query=None,
+            columns_to_exclude="_id",
+            most_recent=False,
         )
-
         with st.sidebar:
             with st.expander("See historical model performance"):
-                st.write(kaka)
+                st.plotly_chart(display_model_performance(historical_model_performance))
 
     except Exception as e:
         st.error(e)

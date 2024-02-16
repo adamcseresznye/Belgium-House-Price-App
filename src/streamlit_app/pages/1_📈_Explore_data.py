@@ -5,13 +5,13 @@ import pandas as pd
 import plotly.express as px
 import requests
 import streamlit as st
-from feature_pipeline import remove_outliers
 from pandas.api.types import is_numeric_dtype
-from prepare_data import preprocess_and_split_data, retrieve_data_from_MongoDB
 from pymongo import MongoClient
 from pymongoarrow.api import find_pandas_all
 
 import creds
+from data_processing import preprocess_and_split_data, retrieve_data_from_MongoDB
+from preprocessing_transformers import remove_outliers
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -34,10 +34,15 @@ TITLE_FONT_SIZE = 28
 
 @st.cache_resource
 def cached_retrieve_data_from_MongoDB(
-    db_name, collection_name, query, columns_to_exclude
+    db_name, collection_name, query, columns_to_exclude, cluster=None, most_recent=True
 ):
     return retrieve_data_from_MongoDB(
-        db_name, collection_name, query, columns_to_exclude
+        db_name,
+        collection_name,
+        query,
+        columns_to_exclude,
+        cluster=cluster,
+        most_recent=most_recent,
     )
 
 
@@ -163,8 +168,10 @@ def main():
         df = cached_retrieve_data_from_MongoDB(
             db_name="development",
             collection_name="BE_houses",
-            query={"day_of_retrieval": "2024-02-09"},
+            query=None,
             columns_to_exclude="_id",
+            cluster=None,
+            most_recent=True,
         )
         X, y = cached_remove_outliers(*cached_preprocess_and_split_data(df))
         df = pd.concat([X, 10**y], axis=1)

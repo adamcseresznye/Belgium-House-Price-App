@@ -11,16 +11,27 @@ def retrieve_data_from_MongoDB(
     collection_name,
     query,
     columns_to_exclude,
-    cluster=MongoClient(creds.Creds.URI),
+    cluster=None,
+    most_recent=True,
 ):
-    db = cluster[db_name]
-    collection = db[collection_name]
-    df = find_pandas_all(collection, query)
-    most_recent = (
-        df.day_of_retrieval.value_counts().sort_values(ascending=False).index[0]
-    )
-    df = df.drop(columns=columns_to_exclude).query("day_of_retrieval == @most_recent")
-    return df
+    if cluster is None:
+        cluster = MongoClient(creds.Creds.URI)
+    try:
+        db = cluster[db_name]
+        collection = db[collection_name]
+        df = find_pandas_all(collection, query)
+        if columns_to_exclude:
+            df = df.drop(columns=columns_to_exclude)
+        if most_recent:
+            most_recent_values = (
+                df.day_of_retrieval.value_counts().sort_values(ascending=False).index[0]
+            )
+            df = df.query("day_of_retrieval == @most_recent_values")
+            return df
+        else:
+            return df
+    finally:
+        cluster.close()
 
 
 def preprocess_and_split_data(df):

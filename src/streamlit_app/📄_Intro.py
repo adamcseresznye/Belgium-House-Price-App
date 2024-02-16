@@ -29,7 +29,7 @@ def main():
 
     st.markdown(
         """
-        [![Star](https://img.shields.io/github/stars/adamcseresznye/Belgian-House-Price-Predictor)](https://gitHub.com/adamcseresznye/traingenerator/Belgian-House-Price-Predictor)
+        [![Star](https://img.shields.io/github/stars/adamcseresznye/Belgian-House-Price-Predictor)](https://gitHub.com/adamcseresznye/Belgian-House-Price-Predictor)
         [![Follow](https://img.shields.io/twitter/follow/csenye22?style=social)](https://www.twitter.com/csenye22)
 
         This app is designed to predict house prices in Belgium using data gathered from [immoweb.be](https://www.immoweb.be/en), a prominent real

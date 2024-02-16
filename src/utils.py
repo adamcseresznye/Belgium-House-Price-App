@@ -10,6 +10,11 @@ class Configuration:
     RAW_DATA_PATH = Path(__file__).parents[1].joinpath("data/raw")
     INTERIM_DATA_PATH = Path(__file__).parents[1].joinpath("data/interim")
     MODEL = Path(__file__).parents[1].joinpath("models")
+    BROWSER_ARGS = [
+        "--no-sandbox",
+        "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
+    ]
+    MAX_NUMBER_OF_PAGES = 100
     target_col = "price"
     seed = 3407
     n_folds = 10
