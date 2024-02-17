@@ -1,8 +1,4 @@
-import os
-import random
 from pathlib import Path
-
-import numpy as np
 
 
 class Configuration:
@@ -10,19 +6,36 @@ class Configuration:
     RAW_DATA_PATH = Path(__file__).parents[1].joinpath("data/raw")
     INTERIM_DATA_PATH = Path(__file__).parents[1].joinpath("data/interim")
     MODEL = Path(__file__).parents[1].joinpath("models")
+
     BROWSER_ARGS = [
         "--no-sandbox",
         "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
     ]
     MAX_NUMBER_OF_PAGES = 100
-    target_col = "price"
-    seed = 3407
-    n_folds = 10
-    verbose = 0
-    early_stopping_round = 20
+    DATACLEANER_COLUMNS_TO_KEEP = [
+        "ad_url",
+        "price",
+        "day_of_retrieval",
+        "zip_code",
+        "energy_class",
+        "primary_energy_consumption",
+        "bedrooms",
+        "tenement_building",
+        "living_area",
+        "surface_of_the_plot",
+        "bathrooms",
+        "double_glazing",
+        "number_of_frontages",
+        "building_condition",
+        "toilets",
+        "heating_type",
+        "construction_year",
+    ]
 
-
-def seed_everything(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
+    TARGET_COLUMN = "price"
+    RANDOM_SEED = 3407
+    CATBOOST_ITERATIONS = 1000
+    CATBOOST_EVAL_FRACTION = 0.2
+    CATBOOST_EARLY_STOPPING_ROUNDS = 20
+    RANDCV_ITERATIONS = 10
+    CROSSVAL_FOLDS = 10

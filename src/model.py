@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Dict, Optional, Union
 
 import catboost
 import numpy as np
@@ -13,11 +14,27 @@ from sklearn import (
     pipeline,
     preprocessing,
 )
+from sklearn.base import BaseEstimator
 
 import preprocessing_transformers
+import utils
 
 
-def create_tuned_pipeline(X_train, y_train, random_seed=None):
+def create_tuned_pipeline(
+    X_train: pd.DataFrame, y_train: pd.Series, random_seed: Optional[int] = None
+) -> model_selection.RandomizedSearchCV:
+    """
+    This function creates a tuned pipeline for a CatBoostRegressor model. It preprocesses the data,
+    applies feature selection, trains the model, and performs hyperparameter tuning using randomized search.
+
+    Parameters:
+    - X_train (pd.DataFrame): The training data.
+    - y_train (pd.Series): The target values for the training data.
+    - random_seed (int, optional): The seed for the random number generator. Defaults to None.
+
+    Returns:
+    - model_selection.RandomizedSearchCV: The tuned model.
+    """
     NUMERICAL_FEATURES = X_train.select_dtypes("number").columns.tolist()
     CATEGORICAL_FEATURES = X_train.select_dtypes("object").columns.tolist()
 
@@ -74,12 +91,12 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
         preprocessor,
         feature_selection.VarianceThreshold(),
         catboost.CatBoostRegressor(
-            iterations=1000,
-            eval_fraction=0.2,
-            early_stopping_rounds=20,
+            iterations=utils.Configuration.CATBOOST_ITERATIONS,
+            eval_fraction=utils.Configuration.CATBOOST_EVAL_FRACTION,
+            early_stopping_rounds=utils.Configuration.CATBOOST_EARLY_STOPPING_ROUNDS,
             silent=True,
             use_best_model=True,
-            random_seed=random_seed,
+            random_seed=utils.Configuration.RANDOM_SEED,
         ),
     )
 
@@ -91,7 +108,7 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
         estimator=model_pipeline,
         param_distributions=param_distributions,
         scoring="neg_root_mean_squared_error",
-        n_iter=10,
+        n_iter=utils.Configuration.RANDCV_ITERATIONS,
         n_jobs=-1,
     )
     grid.fit(X_train, y_train)
@@ -99,20 +116,40 @@ def create_tuned_pipeline(X_train, y_train, random_seed=None):
     return grid.best_estimator_
 
 
-def evaluate_model(model, X_train, y_train, X_test, y_test):
+def evaluate_model(
+    model: BaseEstimator,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+) -> Dict[str, Union[str, float]]:
+    """
+    This function evaluates a model by calculating the average validation score and the average test score.
+    It uses negative root mean squared error as the scoring metric and cross-validation for the validation score.
+
+    Parameters:
+    - model (BaseEstimator): The model to be evaluated.
+    - X_train (pd.DataFrame): The training data.
+    - y_train (pd.Series): The target values for the training data.
+    - X_test (pd.DataFrame): The test data.
+    - y_test (pd.Series): The target values for the test data.
+
+    Returns:
+    - Dict[str, Union[str, float]]: A dictionary containing the day of retrieval, the average validation score, and the average test score.
+    """
     AVG_val_score = -np.mean(
         model_selection.cross_val_score(
             estimator=model,
             X=X_train,
             y=y_train,
             scoring="neg_root_mean_squared_error",
-            cv=10,
+            cv=utils.Configuration.CROSSVAL_FOLDS,
         )
     )
     AVG_test_score = metrics.root_mean_squared_error(y_test, model.predict(X_test))
 
     return {
-        "date": str(date.today()),
+        "day_of_retrieval": str(date.today()),
         "AVG_val_score": AVG_val_score,
         "AVG_test_score": AVG_test_score,
     }

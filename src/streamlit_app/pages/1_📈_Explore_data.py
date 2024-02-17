@@ -29,19 +29,19 @@ st.set_page_config(
 
 HEIGHT = 400
 WIDTH = 500
-TITLE_FONT_SIZE = 28
+TITLE_FONT_SIZE = 20
 
 
 @st.cache_resource
 def cached_retrieve_data_from_MongoDB(
-    db_name, collection_name, query, columns_to_exclude, cluster=None, most_recent=True
+    db_name, collection_name, query, columns_to_exclude, client=None, most_recent=True
 ):
     return retrieve_data_from_MongoDB(
         db_name,
         collection_name,
         query,
         columns_to_exclude,
-        cluster=cluster,
+        client=client,
         most_recent=most_recent,
     )
 
@@ -170,10 +170,13 @@ def main():
             collection_name="BE_houses",
             query=None,
             columns_to_exclude="_id",
-            cluster=None,
+            client=None,
             most_recent=True,
         )
-        X, y = cached_remove_outliers(*cached_preprocess_and_split_data(df))
+        day_of_retrieval = df.day_of_retrieval.unique()[0]
+
+        # X, y = cached_remove_outliers(*cached_preprocess_and_split_data(df))
+        X, y = cached_preprocess_and_split_data(df)
         df = pd.concat([X, 10**y], axis=1)
 
     BE_provinces = get_BE_provice_map()
@@ -207,7 +210,7 @@ def main():
             median_price_aggregate_fig = get_choropleth(df, "price", BE_provinces)
             st.plotly_chart(median_price_aggregate_fig)
 
-            st.markdown("### What defines the typical property in Belgium?")
+            st.markdown("#### What defines the typical property in Belgium?")
             median_values = df[
                 [
                     "price",
@@ -241,7 +244,7 @@ def main():
         with col3:
             number_of_ads_fig = get_choropleth(df, "number_of_ads", BE_provinces)
             st.plotly_chart(number_of_ads_fig)
-            st.markdown("### Fun facts about the dataset")
+            st.markdown("#### Fun facts about the dataset")
 
             oldest_house = df.sort_values(by="construction_year").head(1)
             most_expensive_house = df.sort_values(by="price", ascending=False).head(1)
@@ -251,6 +254,7 @@ def main():
                 / df.province.value_counts()
             ).sort_values(ascending=False)
 
+            st.markdown(f"- The dataset was retrieved on **{day_of_retrieval}**.")
             st.markdown(f" - There are **{df.shape[0]}** ads in the dataset.")
             st.markdown(
                 f" - The oldest house was built in **{int(oldest_house.construction_year.values[0])}** and it is located in **{oldest_house.zip_code.values[0]}, {oldest_house.province.values[0]}**."

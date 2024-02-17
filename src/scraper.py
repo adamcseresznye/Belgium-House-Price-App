@@ -1,25 +1,33 @@
-import os
 import re
-import sys
 from datetime import date
 from io import StringIO
+from typing import List, Optional
 
 import pandas as pd
-import pymongo
 from requests_html import HTMLSession
 
-BROWSER_ARGS = [
-    "--no-sandbox",
-    "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
-]
+import utils
 
 
 def get_house_urls(
-    session,
-    N,
-    url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
-    all_links=None,
-):
+    session: HTMLSession,
+    N: int,
+    url: str = "https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=1&orderBy=relevance",
+    all_links: Optional[List[str]] = None,
+) -> List[str]:
+    """
+    This function recursively scrapes a website for URLs of houses for sale,
+    and returns a list of these URLs.
+
+    Parameters:
+    - session (HTMLSession): The session used to send HTTP requests.
+    - N (int): The number of URLs to scrape before resetting the session.
+    - url (str, optional): The URL of the webpage to scrape. Defaults to a specific search on immoweb.be.
+    - all_links (List[str], optional): A list of URLs that have already been scraped. Defaults to None.
+
+    Returns:
+    - List[str]: A list of URLs of houses for sale.
+    """
     if all_links is None:
         all_links = []
 
@@ -41,14 +49,26 @@ def get_house_urls(
         print("Next page:", next_page)
         if len(all_links) % N == 0:
             session.close()
-            session = HTMLSession(browser_args=BROWSER_ARGS)
+            session = HTMLSession(browser_args=utils.Configuration.BROWSER_ARGS)
 
         return get_house_urls(session, N, next_page, all_links)
     else:
         return all_links
 
 
-def get_house_data(session, url):
+def get_house_data(session: HTMLSession, url: str) -> pd.DataFrame:
+    """
+    This function scrapes a specific webpage for data about a house for sale,
+    and returns a DataFrame of this data.
+
+    Parameters:
+    - session (HTMLSession): The session used to send HTTP requests.
+    - url (str): The URL of the webpage to scrape.
+
+    Returns:
+    - DataFrame: A DataFrame containing data about the house for sale.
+                 If an error occurs during the scraping process, None is returned.
+    """
     try:
         response = session.get(url)
         response.html.render(timeout=15)
@@ -67,8 +87,18 @@ def get_house_data(session, url):
         return None
 
 
-def convert_zip_to_province(value):
-    # data from https://www.spotzi.com/en/data-catalog/categories/postal-codes/belgium/
+def convert_zip_to_province(value: str) -> str:
+    """
+    This function converts a Belgian postal code into the corresponding province
+    based on https://www.spotzi.com/en/data-catalog/categories/postal-codes/belgium/.
+
+    Parameters:
+    - value (str, optional): The postal code to convert. If None, the function returns None.
+
+    Returns:
+    - str: The name of the province corresponding to the postal code.
+           If the postal code does not correspond to any province, or if the input is None, the function returns None.
+    """
     if value is None:
         return None
 
@@ -98,41 +128,66 @@ def convert_zip_to_province(value):
 
 
 class DataCleaner:
-    def __init__(self, data):
-        self.original_data = data
-        self.columns_to_keep = [
-            "ad_url",
-            "price",
-            "day_of_retrieval",
-            "zip_code",
-            "energy_class",
-            "primary_energy_consumption",
-            "bedrooms",
-            "tenement_building",
-            "living_area",
-            "surface_of_the_plot",
-            "bathrooms",
-            "double_glazing",
-            "number_of_frontages",
-            "building_condition",
-            "toilets",
-            "heating_type",
-            "construction_year",
-        ]
+    def __init__(self, data: pd.DataFrame):
+        """
+        Initializes the DataCleaner object with the original data.
 
-    def reformat_headers(self, data):
+        Parameters:
+        - data (pd.DataFrame): The original data to be cleaned.
+        """
+        self.original_data = data
+        self.columns_to_keep = utils.Configuration.DATACLEANER_COLUMNS_TO_KEEP
+
+    def reformat_headers(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Reformats the headers of the DataFrame by replacing spaces with
+        underscores and converting to lowercase.
+
+        Parameters:
+        - data (pd.DataFrame): The DataFrame whose headers are to be reformatted.
+
+        Returns:
+        - pd.DataFrame: The DataFrame with reformatted headers.
+        """
         return data.transpose().rename(columns=lambda x: x.replace(" ", "_").lower())
 
-    def add_missing_columns(self, data):
+    def add_missing_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Adds missing columns to the DataFrame.
+
+        Parameters:
+        - data (pd.DataFrame): The DataFrame to which missing columns are to be added.
+
+        Returns:
+        - pd.DataFrame: The DataFrame with missing columns added.
+        """
         for column in self.columns_to_keep:
             if column not in data.columns:
                 data[column] = "missing"
         return data
 
-    def filter_columns(self, data):
+    def filter_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filters the DataFrame to keep only the necessary columns.
+
+        Parameters:
+        - data (pd.DataFrame): The DataFrame to be filtered.
+
+        Returns:
+        - pd.DataFrame: The filtered DataFrame.
+        """
         return data[self.columns_to_keep]
 
-    def reformat_entries(self, data):
+    def reformat_entries(self, data: pd.DataFrame) -> dict:
+        """
+        Reformats the entries in the DataFrame and converts the DataFrame to a dictionary.
+
+        Parameters:
+        - data (pd.DataFrame): The DataFrame whose entries are to be reformatted.
+
+        Returns:
+        - dict: The reformatted DataFrame as a dictionary.
+        """
         return (
             data.apply(lambda x: x.astype(str))
             .assign(
@@ -189,53 +244,16 @@ class DataCleaner:
             .to_dict()
         )
 
-    def process_item(self):
+    def process_item(self) -> dict:
+        """
+        Processes the original data by applying a pipeline of functions.
+
+        Returns:
+        - dict: The processed data as a dictionary.
+        """
         return (
             self.original_data.pipe(self.reformat_headers)
             .pipe(self.add_missing_columns)
             .pipe(self.filter_columns)
             .pipe(self.reformat_entries)
         )
-
-
-if __name__ == "__main__":
-    N = 100
-
-    session = HTMLSession(browser_args=BROWSER_ARGS)
-    # get links to houses
-    urls = get_house_urls(
-        session=session,
-        N=N,
-    )
-    print("Length of urls:", len(urls))
-
-    # connect to mongodb
-    mongo_uri = os.getenv("MONGO_URI")
-    client = pymongo.MongoClient(mongo_uri)
-    db = client.development
-    if client:
-        print("Connected to MongoDB")
-    else:
-        sys.exit("Failed to connect to MongoDB")
-    try:
-        for i, url in enumerate(urls):
-            if i % N == 0:
-                if session:
-                    session.close()
-                session = HTMLSession(browser_args=BROWSER_ARGS)
-            print(f"Working on: {i} out of {len(urls)} : {url}")
-            result = get_house_data(session=session, url=url)
-
-            if result is None:
-                print(f"Skipping url due to error: {url}")
-                continue
-
-            data_cleaner = DataCleaner(result)
-            processed_dict = data_cleaner.process_item()
-            print(processed_dict)
-
-            db.BE_houses.insert_one(processed_dict)
-            # time.sleep(1)
-    finally:
-        client.close()
-        session.close()

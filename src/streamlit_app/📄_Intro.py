@@ -32,21 +32,21 @@ def main():
         [![Star](https://img.shields.io/github/stars/adamcseresznye/Belgian-House-Price-Predictor)](https://gitHub.com/adamcseresznye/Belgian-House-Price-Predictor)
         [![Follow](https://img.shields.io/twitter/follow/csenye22?style=social)](https://www.twitter.com/csenye22)
 
-        This app is designed to predict house prices in Belgium using data gathered from [immoweb.be](https://www.immoweb.be/en), a prominent real
-        estate platform in the country. Leveraging a CatBoost model with MAPIE, we aim to offer accurate and current price predictions with prediction intervals based on conformal prediction.
-        Explore the housing market and make informed choices with our prediction tool.
+        This app is designed to predict house prices in Belgium using data collected from [immoweb.be](https://www.immoweb.be/en), a prominent real
+        estate platform in the country. By employing a CatBoost model in conjunction with MAPIE, our goal is to provide precise and up-to-date price forecasts, along with an estimation of uncertainty based on conformal prediction.
+        Explore the current housing market, gain insights into the key determinants of property prices, and put our prediction tool to the test
     """
     )
     st.subheader("Introduction")
 
     file_path = Path(__file__).parent
-    image_path = file_path.joinpath("diagram.png")
+    image_path = file_path.joinpath("20240217_diagram.png")
     image = Image.open(image_path)
 
     st.subheader("Describing the Workflow")
     st.info(
         """
-        This is version 2 of our app, completely redesigned from the ground up.
+        This is the second iteration of our application, completely redesigned from the ground up.
 
         **What has changed:**
         - Data that has been scraped and sanitized is now directly uploaded to our MongoDB database.
@@ -73,8 +73,7 @@ def main():
     st.markdown(
         """From the diagram, you can see that our data processing pipeline adheres to the traditional Extract, Transform, and Load (ETL) process.
                 Initially, we extract data from the source using the `request_html` library. Following this, we execute multiple steps to refine the raw data,
-                encompassing datatype conversions from strings to numerical values and converting low cardinal numerical data to boolean. Furthermore, we leverage
-                the Google Maps API to enhance location precision and obtain coordinates based on the provided location information in the advertisements.
+                encompassing datatype conversions from strings to numerical values and converting low cardinal numerical data to boolean.
                 """
     )
     st.markdown(

@@ -1,21 +1,27 @@
+from typing import Tuple
+
 import catboost
-import numpy as np
 import pandas as pd
 from cleanlab.regression.learn import CleanLearning
-from scipy import stats
-from sklearn import (
-    compose,
-    feature_selection,
-    impute,
-    model_selection,
-    pipeline,
-    preprocessing,
-)
+from sklearn import compose, impute, pipeline, preprocessing
 from sklearn.base import BaseEstimator, TransformerMixin
+
+import utils
 
 
 class CategoricalColumnTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, categorical_feature, numerical_feature, transform_type):
+    def __init__(
+        self, categorical_feature: str, numerical_feature: str, transform_type: str
+    ):
+        """
+        Initializes a custom Scikit-learn column transformer. This transformer applies a groupby operation on the
+        categorical_feature and performs a transformation on the numerical_feature based on the transform_type.
+
+        Parameters:
+        - categorical_feature (str): The name of the categorical feature.
+        - numerical_feature (str): The name of the numerical feature.
+        - transform_type (str): The type of transformation to apply.
+        """
         self.categorical_feature = categorical_feature
         self.numerical_feature = numerical_feature
         self.transform_type = transform_type
@@ -42,11 +48,22 @@ class CategoricalColumnTransformer(BaseEstimator, TransformerMixin):
 class ContinuousColumnTransformer(BaseEstimator, TransformerMixin):
     def __init__(
         self,
-        continuous_feature_to_bin,
-        continuous_feature_to_transfer,
-        transform_type,
-        n_bins,
+        continuous_feature_to_bin: str,
+        continuous_feature_to_transfer: str,
+        transform_type: str,
+        n_bins: int,
     ):
+        """
+        Initializes a custom Scikit-learn column transformer. This transformer first converts the
+        continuous_feature_to_bin into a categorical feature followed by a groupby operation. Then it
+        performs a transformation on the continuous_feature_to_transfer based on the transform_type.
+
+        Parameters:
+        - continuous_feature_to_bin (str): The name of the continuous feature to bin.
+        - continuous_feature_to_transfer (str): The name of the continuous feature to transfer.
+        - transform_type (str): The type of transformation to apply.
+        - n_bins (int): The number of bins to use when binning the continuous feature.
+        """
         self.continuous_feature_to_bin = continuous_feature_to_bin
         self.continuous_feature_to_transfer = continuous_feature_to_transfer
         self.transform_type = transform_type
@@ -93,7 +110,20 @@ class ContinuousColumnTransformer(BaseEstimator, TransformerMixin):
         pass
 
 
-def remove_outliers(X, y):
+def remove_outliers(X: pd.DataFrame, y: pd.Series) -> Tuple[pd.DataFrame, pd.Series]:
+    """
+    This function removes outliers from the input DataFrame and target Series using the
+    CleanLab library (https://github.com/cleanlab/cleanlab).
+    It uses a pipeline of transformers to preprocess the data, fits a CatBoostRegressor model,
+    identifies label issues, and removes rows corresponding to these issues from the data.
+
+    Parameters:
+    - X (pd.DataFrame): The input DataFrame.
+    - y (pd.Series): The target Series.
+
+    Returns:
+    - Tuple[pd.DataFrame, pd.Series]: A tuple containing the DataFrame and Series with outliers removed.
+    """
     numerical_cols_idx = [
         X.columns.get_loc(column) for column in X.select_dtypes("number")
     ]
@@ -122,9 +152,9 @@ def remove_outliers(X, y):
     model_pipeline = pipeline.make_pipeline(
         preprocessor,
         catboost.CatBoostRegressor(
-            iterations=100,
-            eval_fraction=0.2,
-            early_stopping_rounds=20,
+            iterations=utils.Configuration.CATBOOST_ITERATIONS / 10,
+            eval_fraction=utils.Configuration.CATBOOST_EVAL_FRACTION,
+            early_stopping_rounds=utils.Configuration.CATBOOST_EARLY_STOPPING_ROUNDS,
             silent=True,
             use_best_model=True,
         ),

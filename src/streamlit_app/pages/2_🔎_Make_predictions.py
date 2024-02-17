@@ -31,14 +31,14 @@ st.set_page_config(
 
 @st.cache_resource
 def cached_retrieve_data_from_MongoDB(
-    db_name, collection_name, query, columns_to_exclude, cluster=None, most_recent=True
+    db_name, collection_name, query, columns_to_exclude, client=None, most_recent=True
 ):
     return retrieve_data_from_MongoDB(
         db_name,
         collection_name,
         query,
         columns_to_exclude,
-        cluster=cluster,
+        client=client,
         most_recent=most_recent,
     )
 
@@ -59,24 +59,30 @@ def fetch_model():
 def display_model_performance(df):
     melted_df = df.rename(
         columns={"AVG_val_score": "Validation RMSE", "AVG_test_score": "Test RMSE"}
-    ).melt(id_vars="date")
-    num_unique_dates = int(melted_df.nunique().date)
+    ).melt(id_vars="day_of_retrieval")
+    num_unique_dates = int(melted_df.nunique().day_of_retrieval)
 
     fig = px.line(
         melted_df,
-        "date",
+        "day_of_retrieval",
         "value",
         color="variable",
         title="Model Performance over time",
         width=450,
         height=350,
         markers=True,
+        line_dash="variable",
     )
 
-    fig.update_xaxes(tickformat="%Y-%m-%d", nticks=num_unique_dates)
+    fig.update_xaxes(
+        tickformat="%Y-%m-%d",
+        nticks=num_unique_dates,
+    )
     fig.update_layout(
         legend_title_text="Metrics",
         margin=dict(l=0, r=0, b=0, t=30, pad=0),
+        xaxis_title="Date of Model Training",
+        yaxis_title="RMSE Score",
     )
     return fig
 
@@ -245,11 +251,13 @@ def main():
 
         click = st.button("Predict house price", key="start-button")
 
-        if click:
+        if click and not X_test.isna().all().all():
             y_pred, y_pis = model.predict(X_test, alpha=0.1)
             st.success(
                 f"The property’s estimated price is €{10** y_pred[0]:,.0f}, with a 90% probability of ranging from €{10**y_pis.flatten()[0]:,.0f} to €{10**y_pis.flatten()[1]:,.0f}."
             )
+        else:
+            st.info("Start filling in the required fields.")
 
         historical_model_performance = cached_retrieve_data_from_MongoDB(
             db_name="development",
