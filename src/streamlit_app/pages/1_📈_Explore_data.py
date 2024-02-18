@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.express as px
 import pymongo
 import requests
+import statsmodels.api as sm
 import streamlit as st
 from pandas.api.types import is_numeric_dtype
 from pymongo import MongoClient
