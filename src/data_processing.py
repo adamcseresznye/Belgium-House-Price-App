@@ -5,8 +5,6 @@ import pandas as pd
 from pymongo import MongoClient
 from pymongoarrow.api import find_pandas_all
 
-import creds
-
 
 def retrieve_data_from_MongoDB(
     db_name: str,
@@ -30,9 +28,6 @@ def retrieve_data_from_MongoDB(
     Returns:
     - pd.DataFrame: The retrieved data as a DataFrame.
     """
-    if client is None:
-        client = MongoClient(creds.Creds.URI)
-
     db = client[db_name]
     collection = db[collection_name]
     df = find_pandas_all(collection, query)
