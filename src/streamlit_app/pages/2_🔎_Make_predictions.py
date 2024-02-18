@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import joblib
 import numpy as np
@@ -8,11 +9,10 @@ import pandas as pd
 import plotly.express as px
 import pymongo
 import streamlit as st
-
-import utils
-from typing import Any, Dict, List, Optional
 from pymongo import MongoClient
 from pymongoarrow.api import find_pandas_all
+
+import utils
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -132,8 +132,8 @@ def main():
             mongo_uri = os.getenv("MONGO_URI")
             client = pymongo.MongoClient(mongo_uri)
             historical_model_performance = retrieve_data_from_MongoDB(
-                db_name="development",
-                collection_name="model_performance",
+                db_name=utils.Configuration.DB_NAME,
+                collection_name=utils.Configuration.COLLECTION_NAME_PERFORMANCE,
                 query=None,
                 columns_to_exclude="_id",
                 _client=client,

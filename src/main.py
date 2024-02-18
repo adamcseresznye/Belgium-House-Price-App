@@ -18,6 +18,7 @@ import utils
 
 def connect_to_mongo(
     mongo_uri: str,
+    db_name: str = utils.Configuration.DB_NAME,
 ) -> Tuple[pymongo.MongoClient, pymongo.database.Database]:
     """
     This function connects to a MongoDB database and returns the client and database objects.
@@ -25,6 +26,7 @@ def connect_to_mongo(
 
     Parameters:
     - mongo_uri (str): The URI of the MongoDB database.
+    - db_name (str, optional): The name of the database. Defaults to "development".
 
     Returns:
     - Tuple[pymongo.MongoClient, pymongo.database.Database]: A tuple containing the client and database objects.
@@ -34,7 +36,7 @@ def connect_to_mongo(
     """
     try:
         client = pymongo.MongoClient(mongo_uri)
-        db = client.development
+        db = client[db_name]
         print("Connected to MongoDB")
         return client, db
     except pymongo.errors.ServerSelectionTimeoutError:
@@ -42,7 +44,11 @@ def connect_to_mongo(
 
 
 def scrape_data(
-    session: HTMLSession, urls: List[str], db: pymongo.database.Database, N: int = 100
+    session: HTMLSession,
+    urls: List[str],
+    db: pymongo.database.Database,
+    N: int = 100,
+    collection_name: str = utils.Configuration.COLLECTION_NAME_DATA,
 ) -> None:
     """
     This function scrapes data from a list of URLs using a given session, processes the data,
@@ -53,6 +59,7 @@ def scrape_data(
     - urls (List[str]): The list of URLs to scrape.
     - db (Database): The MongoDB database where the scraped data is to be inserted.
     - N (int, optional): The number of URLs to scrape before resetting the session. Defaults to 100.
+    - collection_name (str, optional): The name of the MongoDB collection where the scraped data is to be inserted. Defaults to "BE_houses".
 
     Raises:
     - Exception: If an error occurs while processing a URL.
@@ -75,7 +82,7 @@ def scrape_data(
             processed_dict = data_cleaner.process_item()
             print(processed_dict)
 
-            db.BE_houses.insert_one(processed_dict)
+            db[collection_name].insert_one(processed_dict)
     except Exception as e:
         print(f"Error while processing url {url}: {e}")
 
@@ -116,8 +123,8 @@ def main() -> None:
         scrape_data(session, selected_urls, db)
 
         df = data_processing.retrieve_data_from_MongoDB(
-            db_name="development",
-            collection_name="BE_houses",
+            db_name=utils.Configuration.DB_NAME,
+            collection_name=utils.Configuration.COLLECTION_NAME_DATA,
             query=None,
             columns_to_exclude="_id",
             client=db_client,

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ from pandas.api.types import is_numeric_dtype
 from pymongo import MongoClient
 from pymongoarrow.api import find_pandas_all
 
+import utils
 from data_processing import preprocess_and_split_data
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -79,9 +81,9 @@ def cached_preprocess_and_split_data(df):
 
 @st.cache_data
 def get_BE_provice_map():
-    return requests.get(
-        "https://raw.githubusercontent.com/mathiasleroy/Belgium-Geographic-Data/master/dist/polygons/be-provinces-unk-WGS84.geo.json"
-    ).json()
+    with open("be-provinces-unk-WGS84.geo.json") as f:
+        geojson = json.load(f)
+    return geojson
 
 
 def get_choropleth(data, feature, BE_map):
@@ -190,8 +192,8 @@ def main():
         client = pymongo.MongoClient(mongo_uri)
 
         df = retrieve_data_from_MongoDB(
-            db_name="development",
-            collection_name="BE_houses",
+            db_name=utils.Configuration.DB_NAME,
+            collection_name=utils.Configuration.COLLECTION_NAME_DATA,
             query=None,
             columns_to_exclude="_id",
             _client=client,

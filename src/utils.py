@@ -6,7 +6,6 @@ class Configuration:
     RAW_DATA_PATH = Path(__file__).parents[1].joinpath("data/raw")
     INTERIM_DATA_PATH = Path(__file__).parents[1].joinpath("data/interim")
     MODEL = Path(__file__).parents[1].joinpath("models")
-
     BROWSER_ARGS = [
         "--no-sandbox",
         "--user-agent=Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1",
@@ -31,7 +30,9 @@ class Configuration:
         "heating_type",
         "construction_year",
     ]
-
+    DB_NAME = "development"
+    COLLECTION_NAME_DATA = "BE_houses"
+    COLLECTION_NAME_RMSE = "model_performance"
     TARGET_COLUMN = "price"
     RANDOM_SEED = 3407
     CATBOOST_ITERATIONS = 1000
