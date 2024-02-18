@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import plotly.express as px
@@ -8,10 +9,10 @@ import pymongo
 import requests
 import streamlit as st
 from pandas.api.types import is_numeric_dtype
-from typing import Any, Dict, List, Optional
 from pymongo import MongoClient
 from pymongoarrow.api import find_pandas_all
 
+from data_processing import preprocess_and_split_data
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
