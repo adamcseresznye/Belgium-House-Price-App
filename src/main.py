@@ -109,7 +109,6 @@ def main() -> None:
     urls = scraper.get_house_urls(
         session=session,
         N=N,
-        url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=330&orderBy=relevance",
     )
     selected_urls = random.sample(urls, k=int(len(urls) * 0.5))
     print(

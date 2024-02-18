@@ -133,7 +133,7 @@ def main():
             client = pymongo.MongoClient(mongo_uri)
             historical_model_performance = retrieve_data_from_MongoDB(
                 db_name=utils.Configuration.DB_NAME,
-                collection_name=utils.Configuration.COLLECTION_NAME_PERFORMANCE,
+                collection_name=utils.Configuration.COLLECTION_NAME_RMSE,
                 query=None,
                 columns_to_exclude="_id",
                 _client=client,
