@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -5,6 +6,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import pymongo
 import streamlit as st
 
 import utils
@@ -101,11 +103,14 @@ def main():
                     for the most accurate predictions based on what the model has learned, try to be as specific as possible."""
         )
         with st.spinner("Please wait while retrieving data from the database..."):
+            mongo_uri = os.getenv("MONGO_URI")
+            client = pymongo.MongoClient(mongo_uri)
             historical_model_performance = cached_retrieve_data_from_MongoDB(
                 db_name="development",
                 collection_name="model_performance",
                 query=None,
                 columns_to_exclude="_id",
+                client=client,
                 most_recent=False,
             )
         with st.sidebar:

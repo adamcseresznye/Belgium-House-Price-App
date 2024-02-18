@@ -1,8 +1,10 @@
+import os
 import sys
 from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
+import pymongo
 import requests
 import streamlit as st
 from pandas.api.types import is_numeric_dtype
@@ -162,12 +164,15 @@ def get_stats_plot(data, feature):
 
 def main():
     with st.spinner("Please wait while retrieving data from the database..."):
+        mongo_uri = os.getenv("MONGO_URI")
+        client = pymongo.MongoClient(mongo_uri)
+
         df = cached_retrieve_data_from_MongoDB(
             db_name="development",
             collection_name="BE_houses",
             query=None,
             columns_to_exclude="_id",
-            client=None,
+            client=client,
             most_recent=True,
         )
         day_of_retrieval = df.day_of_retrieval.unique()[0]
