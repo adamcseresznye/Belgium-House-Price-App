@@ -25,9 +25,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: run spider
-        working-directory: src/scrapers
+      - name: run pipeline
+        working-directory: src
         run: |
-          python scraper.py
+          python main.py
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
+
+      # Commit all changed files back to the repository
+      - uses: stefanzweifel/git-auto-commit-action@v5

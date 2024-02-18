@@ -1,11 +1,10 @@
 import os
+import random
 import sys
 from typing import List, Tuple
 
 import joblib
 import mapie
-import numpy as np
-import pandas as pd
 import pymongo
 from requests_html import HTMLSession
 from sklearn import model_selection
@@ -105,13 +104,16 @@ def main() -> None:
         N=N,
         url="https://www.immoweb.be/en/search/house/for-sale?countries=BE&page=330&orderBy=relevance",
     )
-    print("Length of urls:", len(urls))
+    selected_urls = random.sample(urls, k=int(len(urls) * 0.5))
+    print(
+        f"Length of all urls: {len(urls)}. Legth of selected urls: {len(selected_urls)}"
+    )
 
     mongo_uri = os.getenv("MONGO_URI")
     db_client, db = connect_to_mongo(mongo_uri)
 
     try:
-        scrape_data(session, urls, db)
+        scrape_data(session, selected_urls, db)
 
         df = data_processing.retrieve_data_from_MongoDB(
             db_name="development",

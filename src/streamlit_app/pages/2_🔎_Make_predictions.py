@@ -11,7 +11,6 @@ import streamlit as st
 
 import utils
 from data_processing import retrieve_data_from_MongoDB
-from models import predict_model
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -23,7 +22,7 @@ st.set_page_config(
     layout="wide",
     menu_items={
         "Get Help": "https://adamcseresznye.github.io/blog/",
-        "Report a bug": "https://github.com/adamcseresznye/house_price_prediction",
+        "Report a bug": "https://github.com/adamcseresznye/Belgium-House-Price-App",
         "About": "Explore and Predict Belgian House Prices with Immoweb Data and CatBoost!",
     },
 )
@@ -68,8 +67,13 @@ def display_model_performance(df):
         "value",
         color="variable",
         title="Model Performance over time",
+        labels={
+            "variable": "Model Metrics",
+            "value": "RMSE Score",
+            "day_of_retrieval": "Date of Model Training",
+        },
         width=450,
-        height=350,
+        height=300,
         markers=True,
         line_dash="variable",
     )
@@ -83,7 +87,9 @@ def display_model_performance(df):
         margin=dict(l=0, r=0, b=0, t=30, pad=0),
         xaxis_title="Date of Model Training",
         yaxis_title="RMSE Score",
+        legend=dict(orientation="h", yanchor="top", y=1.1, xanchor="right", x=1),
     )
+
     return fig
 
 
@@ -96,6 +102,18 @@ def main():
             """Please enter the input features below. While you're _not required_ to provide values for all the listed variables,
                     for the most accurate predictions based on what the model has learned, try to be as specific as possible."""
         )
+        with st.spinner("Please wait while retrieving data from the database..."):
+            historical_model_performance = cached_retrieve_data_from_MongoDB(
+                db_name="development",
+                collection_name="model_performance",
+                query=None,
+                columns_to_exclude="_id",
+                most_recent=False,
+            )
+        with st.sidebar:
+            with st.expander("See historical model performance"):
+                st.plotly_chart(display_model_performance(historical_model_performance))
+
         with st.expander("click to expand"):
             col1, col2, col3 = st.columns(spec=3, gap="large")
 
@@ -258,17 +276,6 @@ def main():
             )
         else:
             st.info("Start filling in the required fields.")
-
-        historical_model_performance = cached_retrieve_data_from_MongoDB(
-            db_name="development",
-            collection_name="model_performance",
-            query=None,
-            columns_to_exclude="_id",
-            most_recent=False,
-        )
-        with st.sidebar:
-            with st.expander("See historical model performance"):
-                st.plotly_chart(display_model_performance(historical_model_performance))
 
     except Exception as e:
         st.error(e)

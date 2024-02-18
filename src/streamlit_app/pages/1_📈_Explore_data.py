@@ -22,7 +22,7 @@ st.set_page_config(
     layout="wide",
     menu_items={
         "Get Help": "https://adamcseresznye.github.io/blog/",
-        "Report a bug": "https://github.com/adamcseresznye/house_price_prediction",
+        "Report a bug": "https://github.com/adamcseresznye/Belgium-House-Price-App",
         "About": "Explore and Predict Belgian House Prices with Immoweb Data and CatBoost!",
     },
 )
@@ -115,6 +115,12 @@ def get_choropleth(data, feature, BE_map):
 
 
 def get_stats_plot(data, feature):
+    title = f"Effect of {feature.replace('_', ' ').title()} on House Prices"
+    labels = {
+        feature: feature.replace("_", " ").title(),
+        "price": "Price in Log10-Scale (EUR)",
+    }
+
     if data[feature].nunique() > 20:
         plot = px.scatter(
             data,
@@ -122,18 +128,14 @@ def get_stats_plot(data, feature):
             y="price",
             trendline="lowess",
             template="plotly_dark",
-            title=f"Effect of {feature.replace('_', ' ').title()} on House Prices",
+            title=title,
             trendline_color_override="#c91e01",
             opacity=0.5,
             height=HEIGHT,
             width=WIDTH,
-            labels={
-                feature: feature.replace("_", " ").title(),
-                "price": "Price in Log10-Scale (EUR)",
-            },
+            labels=labels,
             log_y=True,
         )
-
     else:
         sorted_index = data.groupby(feature).price.median().sort_values().index.tolist()
         plot = px.box(
@@ -145,13 +147,11 @@ def get_stats_plot(data, feature):
             category_orders=sorted_index,
             height=HEIGHT,
             width=WIDTH,
-            title=f"Effect of {feature.replace('_', ' ').title()} on House Prices",
-            labels={
-                "price": "Price in Log10-Scale (EUR)",
-                feature: f"{feature.replace('_', ' ').title()}",
-            },
+            title=title,
+            labels=labels,
         )
         plot.update_xaxes(categoryorder="array", categoryarray=sorted_index)
+
     plot.update_layout(
         autosize=False,
         title_font=dict(size=TITLE_FONT_SIZE),
@@ -164,7 +164,7 @@ def get_stats_plot(data, feature):
 
 
 def main():
-    with st.spinner("Retrieving data from the database..."):
+    with st.spinner("Please wait while retrieving data from the database..."):
         df = cached_retrieve_data_from_MongoDB(
             db_name="development",
             collection_name="BE_houses",
@@ -174,8 +174,6 @@ def main():
             most_recent=True,
         )
         day_of_retrieval = df.day_of_retrieval.unique()[0]
-
-        # X, y = cached_remove_outliers(*cached_preprocess_and_split_data(df))
         X, y = cached_preprocess_and_split_data(df)
         df = pd.concat([X, 10**y], axis=1)
 
@@ -254,13 +252,14 @@ def main():
                 / df.province.value_counts()
             ).sort_values(ascending=False)
 
-            st.markdown(f"- The dataset was retrieved on **{day_of_retrieval}**.")
-            st.markdown(f" - There are **{df.shape[0]}** ads in the dataset.")
             st.markdown(
-                f" - The oldest house was built in **{int(oldest_house.construction_year.values[0])}** and it is located in **{oldest_house.zip_code.values[0]}, {oldest_house.province.values[0]}**."
+                f"- The dataset, retrieved on **{day_of_retrieval}** contains **{df.shape[0]}** ads."
             )
             st.markdown(
-                f"- The most expensive house costs **€{int(most_expensive_house.price.values[0])}** and it is located in **{most_expensive_house.zip_code.values[0]}, {most_expensive_house.province.values[0]}**."
+                f" - The oldest house, built in **{int(oldest_house.construction_year.values[0])}**, is in **{oldest_house.zip_code.values[0]}, {oldest_house.province.values[0]}**."
+            )
+            st.markdown(
+                f"- The most expensive house, costing **€{int(most_expensive_house.price.values[0])}**, is in **{most_expensive_house.zip_code.values[0]}, {most_expensive_house.province.values[0]}**."
             )
             st.markdown(
                 f"- The most common energy rating is **{energy_ratings.head(1).index[0]}**, accounting for **{energy_ratings.head(1).values[0]:.1%}** of the ads."
@@ -269,10 +268,7 @@ def main():
                 f"- **{energy_ratings.filter(regex='A|B', axis = 0).sum():.1%}** of the houses have energy efficiency ratings of **B and above**."
             )
             st.markdown(
-                f"- The most energy efficient (% houses with a score of B or above) province is **{energy_ratings_B_above.head(1).index[0]} ({energy_ratings_B_above.head(1).values[0]:.1%})**."
-            )
-            st.markdown(
-                f"- The least energy efficient province is **{energy_ratings_B_above.tail(1).index[0]} ({energy_ratings_B_above.tail(1).values[0]:.1%})**."
+                f"- Based on the ratio of houses per province with energy score of B or above, the most energy efficient  province is **{energy_ratings_B_above.head(1).index[0]} ({energy_ratings_B_above.head(1).values[0]:.1%})** while **{energy_ratings_B_above.dropna().tail(1).index[0]} ({energy_ratings_B_above.dropna().tail(1).values[0]:.1%})** is the least."
             )
 
 

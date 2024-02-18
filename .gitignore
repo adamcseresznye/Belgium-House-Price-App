@@ -92,4 +92,5 @@ target/
 /src/creds.py
 
 # catboost training log
-.catboost_info/
+/src/catboost_info/
+/notebooks/catboost_info/

@@ -18,7 +18,7 @@ st.set_page_config(
     layout="wide",
     menu_items={
         "Get Help": "https://adamcseresznye.github.io/blog/",
-        "Report a bug": "https://github.com/adamcseresznye/house_price_prediction",
+        "Report a bug": "https://github.com/adamcseresznye/Belgium-House-Price-App",
         "About": "Explore and Predict Belgian House Prices with Immoweb Data and CatBoost!",
     },
 )
@@ -29,12 +29,12 @@ def main():
 
     st.markdown(
         """
-        [![Star](https://img.shields.io/github/stars/adamcseresznye/Belgian-House-Price-Predictor)](https://gitHub.com/adamcseresznye/Belgian-House-Price-Predictor)
+        [![Star](https://img.shields.io/github/stars/adamcseresznye/Belgium-House-Price-App?style=social)](https://github.com/adamcseresznye/Belgium-House-Price-App)
         [![Follow](https://img.shields.io/twitter/follow/csenye22?style=social)](https://www.twitter.com/csenye22)
 
         This app is designed to predict house prices in Belgium using data collected from [immoweb.be](https://www.immoweb.be/en), a prominent real
         estate platform in the country. By employing a CatBoost model in conjunction with MAPIE, our goal is to provide precise and up-to-date price forecasts, along with an estimation of uncertainty based on conformal prediction.
-        Explore the current housing market, gain insights into the key determinants of property prices, and put our prediction tool to the test
+        Explore the current housing market, gain insights into the key determinants of property prices, and put our prediction tool to the test.
     """
     )
     st.subheader("Introduction")
@@ -46,22 +46,21 @@ def main():
     st.subheader("Describing the Workflow")
     st.info(
         """
-        This is the second iteration of our application, completely redesigned from the ground up.
+        We are excited to introduce the revamped version of our application, entirely rebuilt from scratch. Here’s what’s new:
 
-        **What has changed:**
-        - Data that has been scraped and sanitized is now directly uploaded to our MongoDB database.
-        - The unnecessary features have been eliminated.
-        - Automatic feature selection is included with hyperparameter optimization using GridSearchCV.
-        - Predictions are made with confidence intervals at the 90% level, utilizing conformal prediction.
+        - We now upload scraped and sanitized data directly to our MongoDB database.
+        - We’ve removed features that were not necessary.
+        - We’ve incorporated automatic feature selection along with hyperparameter optimization using GridSearchCV.
+        - Our predictions now come with 90% confidence intervals, thanks to the use of conformal prediction.
 
-        For an in-depth exploration of the pipeline's creation of the first version of our app, encompassing
+        For an in-depth exploration of the pipeline's creation of the first version of our app, including
         [data preparation](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%201_Feature%20Selection%20for%20Web%20Scraping/NB_1_ACs_Select_features_for_scraping.html),
         [cleaning](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%202_Basic_clean_up_after_scraping/NB_2_ACs_Basic_clean_up_after_scraping.html),
         [feature generation](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%206_Feature_engineering/NB_6_ACs_Feature_engineering.html),
         [feature importance assessment](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%205_Initial_feature_selection/NB_5_ACs_Initial_feature_selection.html),
         [model training](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%204_Building_a_baseline_model/NB_4_ACs_Building_a_baseline_model.html),
         [fine-tuning](https://adamcseresznye.github.io/blog/projects/Predicting%20Belgian%20Real%20Estate%20Prices_%20Part%207_Fine_tuning/NB_7_ACs_Fine_tuning.html)
-        and more, feel free to explore my
+        and more, feel free to explore our
         [seven-part series of articles](https://adamcseresznye.github.io/blog/projects.html).
             """
     )
