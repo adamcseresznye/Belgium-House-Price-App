@@ -1,13 +1,8 @@
 import sys
 from pathlib import Path
 
-import joblib
-import numpy as np
-import pandas as pd
 import streamlit as st
 from PIL import Image
-
-import utils
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 

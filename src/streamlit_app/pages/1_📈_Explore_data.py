@@ -6,10 +6,7 @@ import plotly.express as px
 import requests
 import streamlit as st
 from pandas.api.types import is_numeric_dtype
-from pymongo import MongoClient
-from pymongoarrow.api import find_pandas_all
 
-import creds
 from data_processing import preprocess_and_split_data, retrieve_data_from_MongoDB
 from preprocessing_transformers import remove_outliers
 

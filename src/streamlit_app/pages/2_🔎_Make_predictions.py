@@ -1,8 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Tuple
 
-import catboost
 import joblib
 import numpy as np
 import pandas as pd
