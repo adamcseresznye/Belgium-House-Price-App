@@ -33,14 +33,14 @@ TITLE_FONT_SIZE = 20
 
 @st.cache_resource
 def cached_retrieve_data_from_MongoDB(
-    db_name, collection_name, query, columns_to_exclude, client=None, most_recent=True
+    db_name, collection_name, query, columns_to_exclude, _client=None, most_recent=True
 ):
     return retrieve_data_from_MongoDB(
         db_name,
         collection_name,
         query,
         columns_to_exclude,
-        client=client,
+        client=_client,
         most_recent=most_recent,
     )
 
