@@ -81,7 +81,10 @@ def cached_preprocess_and_split_data(df):
 
 @st.cache_data
 def get_BE_provice_map():
-    with open("be-provinces-unk-WGS84.geo.json") as f:
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    file_path = os.path.join(dir_path, "be-provinces-unk-WGS84.geo.json")
+
+    with open(file_path) as f:
         geojson = json.load(f)
     return geojson
 
