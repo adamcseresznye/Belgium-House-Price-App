@@ -8,9 +8,10 @@ import pymongo
 import requests
 import streamlit as st
 from pandas.api.types import is_numeric_dtype
+from typing import Any, Dict, List, Optional
+from pymongo import MongoClient
+from pymongoarrow.api import find_pandas_all
 
-from data_processing import preprocess_and_split_data, retrieve_data_from_MongoDB
-from preprocessing_transformers import remove_outliers
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
@@ -32,27 +33,46 @@ TITLE_FONT_SIZE = 20
 
 
 @st.cache_resource
-def cached_retrieve_data_from_MongoDB(
-    db_name, collection_name, query, columns_to_exclude, _client=None, most_recent=True
-):
-    return retrieve_data_from_MongoDB(
-        db_name,
-        collection_name,
-        query,
-        columns_to_exclude,
-        client=_client,
-        most_recent=most_recent,
-    )
+def retrieve_data_from_MongoDB(
+    db_name: str,
+    collection_name: str,
+    query: Dict[str, Any],
+    columns_to_exclude: Optional[List[str]],
+    _client: Optional[MongoClient] = None,
+    most_recent: bool = True,
+) -> pd.DataFrame:
+    """
+    This function retrieves data from a MongoDB collection and returns it as a DataFrame.
+
+    Parameters:
+    - db_name (str): The name of the MongoDB database.
+    - collection_name (str): The name of the collection in the database.
+    - query (Dict[str, Any]): The query to use when retrieving data from the collection.
+    - columns_to_exclude (List[str], optional): A list of column names to exclude from the DataFrame. If None, no columns are excluded.
+    - client (MongoClient, optional): The MongoDB client to use. If None, a new client is created.
+    - most_recent (bool, optional): Whether to only include the most recent data in the DataFrame. Defaults to True.
+
+    Returns:
+    - pd.DataFrame: The retrieved data as a DataFrame.
+    """
+    db = _client[db_name]
+    collection = db[collection_name]
+    df = find_pandas_all(collection, query)
+    if columns_to_exclude:
+        df = df.drop(columns=columns_to_exclude)
+    if most_recent:
+        most_recent_values = (
+            df.day_of_retrieval.value_counts().sort_values(ascending=True).index[0]
+        )
+        df = df.query("day_of_retrieval == @most_recent_values")
+        return df
+    else:
+        return df
 
 
 @st.cache_data
 def cached_preprocess_and_split_data(df):
     return preprocess_and_split_data(df)
-
-
-@st.cache_data
-def cached_remove_outliers(X, y):
-    return remove_outliers(X, y)
 
 
 @st.cache_data
@@ -167,12 +187,12 @@ def main():
         mongo_uri = os.getenv("MONGO_URI")
         client = pymongo.MongoClient(mongo_uri)
 
-        df = cached_retrieve_data_from_MongoDB(
+        df = retrieve_data_from_MongoDB(
             db_name="development",
             collection_name="BE_houses",
             query=None,
             columns_to_exclude="_id",
-            client=client,
+            _client=client,
             most_recent=True,
         )
         day_of_retrieval = df.day_of_retrieval.unique()[0]
