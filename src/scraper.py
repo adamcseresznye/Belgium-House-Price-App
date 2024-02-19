@@ -1,9 +1,11 @@
 import re
+import time
 from datetime import date
 from io import StringIO
 from typing import List, Optional
 
 import pandas as pd
+from pyppeteer.errors import TimeoutError
 from requests_html import HTMLSession
 
 import utils
@@ -31,29 +33,41 @@ def get_house_urls(
     if all_links is None:
         all_links = []
 
-    r = session.get(url)
-    r.html.render(timeout=15)
+    retry_count = 0
+    max_retries = 5
 
-    elements = r.html.find(".search-results a")
-    links = [element.attrs["href"] for element in elements if "href" in element.attrs]
-    filtered_links = [
-        link
-        for link in links
-        if link and "www.immoweb.be/en/classified/house/for-sale" in link
-    ]
+    while retry_count < max_retries:
+        try:
+            r = session.get(url)
+            r.html.render(timeout=15)
 
-    all_links.extend(filtered_links)
+            elements = r.html.find(".search-results a")
+            links = [
+                element.attrs["href"] for element in elements if "href" in element.attrs
+            ]
+            filtered_links = [
+                link
+                for link in links
+                if link and "www.immoweb.be/en/classified/house/for-sale" in link
+            ]
 
-    next_page = r.html.next()
-    if next_page:
-        print("Next page:", next_page)
-        if len(all_links) % N == 0:
-            session.close()
-            session = HTMLSession(browser_args=utils.Configuration.BROWSER_ARGS)
+            all_links.extend(filtered_links)
 
-        return get_house_urls(session, N, next_page, all_links)
-    else:
-        return all_links
+            next_page = r.html.next()
+            if next_page:
+                print("Next page:", next_page)
+                if len(all_links) % N == 0:
+                    session.close()
+                    session = HTMLSession(browser_args=utils.Configuration.BROWSER_ARGS)
+
+                return get_house_urls(session, N, next_page, all_links)
+            else:
+                return all_links
+
+        except TimeoutError:
+            retry_count += 1
+            print(f"TimeoutError occurred. Retrying... ({retry_count}/{max_retries})")
+            time.sleep(5)
 
 
 def get_house_data(session: HTMLSession, url: str) -> pd.DataFrame:
@@ -101,6 +115,9 @@ def convert_zip_to_province(value: str) -> str:
     """
     if value is None:
         return None
+
+    if not len(value) == 4:
+        raise ValueError("Invalid postal code")
 
     first_two_digits = int(value[:2])
 
@@ -201,41 +218,41 @@ class DataCleaner:
                 energy_class=lambda x: x["energy_class"].str.strip(),
                 primary_energy_consumption=lambda x: pd.to_numeric(
                     x["primary_energy_consumption"]
-                    .str.extract("(\d+)", expand=False)
+                    .str.extract(r"(\d+)", expand=False)
                     .str.replace(",", ""),
                     errors="coerce",
                 ),
                 bedrooms=lambda x: pd.to_numeric(
-                    x["bedrooms"].str.extract("(\d+)", expand=False), errors="coerce"
+                    x["bedrooms"].str.extract(r"(\d+)", expand=False), errors="coerce"
                 ),
                 tenement_building=lambda x: x["tenement_building"].str.strip(),
                 living_area=lambda x: pd.to_numeric(
                     x["living_area"]
-                    .str.extract("(\d+)", expand=False)
+                    .str.extract(r"(\d+)", expand=False)
                     .str.replace(",", ""),
                     errors="coerce",
                 ),
                 surface_of_the_plot=lambda x: pd.to_numeric(
                     x["surface_of_the_plot"]
-                    .str.extract("(\d+)", expand=False)
+                    .str.extract(r"(\d+)", expand=False)
                     .str.replace(",", ""),
                     errors="coerce",
                 ),
                 bathrooms=lambda x: pd.to_numeric(
-                    x["bathrooms"].str.extract("(\d+)", expand=False), errors="coerce"
+                    x["bathrooms"].str.extract(r"(\d+)", expand=False), errors="coerce"
                 ),
                 double_glazing=lambda x: x["double_glazing"].str.strip(),
                 number_of_frontages=lambda x: pd.to_numeric(
-                    x["number_of_frontages"].str.extract("(\d+)", expand=False),
+                    x["number_of_frontages"].str.extract(r"(\d+)", expand=False),
                     errors="coerce",
                 ),
                 building_condition=lambda x: x["building_condition"].str.strip(),
                 toilets=lambda x: pd.to_numeric(
-                    x["toilets"].str.extract("(\d+)", expand=False), errors="coerce"
+                    x["toilets"].str.extract(r"(\d+)", expand=False), errors="coerce"
                 ),
                 heating_type=lambda x: x["heating_type"].str.strip(),
                 construction_year=lambda x: pd.to_numeric(
-                    x["construction_year"].str.extract("(\d+)", expand=False),
+                    x["construction_year"].str.extract(r"(\d+)", expand=False),
                     errors="coerce",
                 ),
             )

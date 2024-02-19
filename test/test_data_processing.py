@@ -1,50 +1,36 @@
-from unittest.mock import patch
+from typing import Tuple
 
+import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
-from pymongo import MongoClient
 
-from data_processing import retrieve_data_from_MongoDB
+from data_processing import preprocess_and_split_data
 
 
-def test_retrieve_data_from_MongoDB():
-    # Mocking the MongoClient
-    mock_client = MongoClient()
-
-    # Mocking the database and collection
-    mock_db = mock_client["test_db"]
-    mock_collection = mock_db["test_collection"]
-
-    # Mocking the data
-    mock_data = pd.DataFrame(
+def test_preprocess_and_split_data():
+    # Create a fixture DataFrame
+    df = pd.DataFrame(
         {
-            "column1": ["data1", "data2"],
-            "column2": ["data3", "data4"],
-            "day_of_retrieval": ["2024-02-17", "2024-02-18"],
+            "day_of_retrieval": ["2022-01-01", "2022-01-02", "2022-01-03"],
+            "ad_url": ["url1", "url2", "url3"],
+            "price": [100_001, 200_000, np.nan],
+            "zip_code": ["12345", "23456", "34567"],
         }
     )
 
-    # Mocking the find_pandas_all function to return the mock_data
-    mock_collection.find_pandas_all.return_value = mock_data
+    # Call the function with the fixture DataFrame
+    X, y = preprocess_and_split_data(df)
 
-    # The expected output after dropping 'column1'
-    expected_output = pd.DataFrame(
-        {"column1": ["data1"], "day_of_retrieval": ["2024-02-17"]}
-    )
-    # The query
-    query = {"day_of_retrieval": "2024-02-17"}
+    # Check that the unnecessary columns have been dropped
+    assert "day_of_retrieval" not in X.columns
+    assert "ad_url" not in X.columns
 
-    # The columns to exclude
-    columns_to_exclude = ["column2"]
+    # Check that rows with missing price data have been removed
+    assert X.shape[0] == 2
 
-    # Call the function with the mock client
-    result = retrieve_data_from_MongoDB(
-        "test_db", "test_collection", query, columns_to_exclude, mock_client, True
-    )
-    return mock_client
+    # Check that houses with prices less than 100,000 have been filtered out
+    assert (np.power(10, y) > 100_000).all()
 
-
-if __name__ == "__main__":
-    test = test_retrieve_data_from_MongoDB()
-    print(test)
+    # Check that the price and zip code columns have been transformed
+    assert (y == np.log10(df.price.dropna())).all()
+    assert (X.zip_code == pd.to_numeric(df.loc[X.index, "zip_code"])).all()
