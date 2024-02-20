@@ -65,8 +65,10 @@ def retrieve_data_from_MongoDB(
     if columns_to_exclude:
         df = df.drop(columns=columns_to_exclude)
     if most_recent:
-        most_recent_values = (
-            df.day_of_retrieval.value_counts().sort_values(ascending=True).index[0]
+        most_recent_values = str(
+            pd.to_datetime(df["day_of_retrieval"].unique(), format="%Y-%m-%d")
+            .sort_values(ascending=False)[0]
+            .strftime("%Y-%m-%d")
         )
         df = df.query("day_of_retrieval == @most_recent_values")
         return df
