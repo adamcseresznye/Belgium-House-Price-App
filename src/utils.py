@@ -30,7 +30,7 @@ class Configuration:
         "heating_type",
         "construction_year",
     ]
-    DB_NAME = "development"
+    DB_NAME = "production"
     COLLECTION_NAME_DATA = "BE_houses"
     COLLECTION_NAME_RMSE = "model_performance"
     TARGET_COLUMN = "price"

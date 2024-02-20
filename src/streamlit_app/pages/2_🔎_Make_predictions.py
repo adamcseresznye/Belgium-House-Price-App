@@ -111,11 +111,11 @@ def display_model_performance(df):
         nticks=num_unique_dates,
     )
     fig.update_layout(
-        legend_title_text="Metrics",
-        margin=dict(l=0, r=0, b=0, t=30, pad=0),
+        legend_title_text=" ",
+        margin=dict(l=0, r=0, b=0, t=30, pad=10),
         xaxis_title="Date of Model Training",
         yaxis_title="RMSE Score",
-        legend=dict(orientation="h", yanchor="top", y=1.1, xanchor="right", x=1),
+        legend=dict(orientation="h", yanchor="top", y=1.2, xanchor="right", x=1),
     )
 
     return fig
