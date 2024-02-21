@@ -66,7 +66,7 @@ def main():
     )
     st.markdown(
         """From the diagram, you can see that our data processing pipeline adheres to the traditional Extract, Transform, and Load (ETL) process.
-                Initially, we extract data from the source using the `request_html` library. Following this, we execute multiple steps to refine the raw data,
+                Initially, we extract data from the source using the `requests-html` library. Following this, we execute multiple steps to refine the raw data,
                 encompassing datatype conversions from strings to numerical values and converting low cardinal numerical data to boolean.
                 """
     )

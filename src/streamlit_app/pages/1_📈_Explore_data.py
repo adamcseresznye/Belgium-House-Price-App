@@ -191,9 +191,18 @@ def get_stats_plot(data, feature):
     return plot
 
 
+def format_number(num):
+    if num > 1000000:
+        if not num % 1000000:
+            return f"{num // 1000000} M"
+        return f"{round(num / 1000000, 1)} M"
+    return f"{int(num // 1000)} K"
+
+
 def main():
     with st.spinner("Please wait while retrieving data from the database..."):
-        mongo_uri = os.getenv("MONGO_URI")
+        mongo_uri = "mongodb+srv://csenyechem:QeVTEvWykjfElM8u@cluster0.2ivt0kx.mongodb.net/?retryWrites=true&w=majority"
+        # mongo_uri = os.getenv("MONGO_URI")
         client = pymongo.MongoClient(mongo_uri)
 
         df = retrieve_data_from_MongoDB(
@@ -226,18 +235,11 @@ def main():
     if selected_feature:
         converted_selected_feature = selected_feature.replace(" ", "_").lower()
 
-        def format_number(num):
-            if num > 1000000:
-                if not num % 1000000:
-                    return f"{num // 1000000} M"
-                return f"{round(num / 1000000, 1)} M"
-            return f"{int(num // 1000)} K"
-
         col1, col2, col3 = st.columns([1, 1, 1], gap="small")
 
         with col1:
             median_price_aggregate_fig = get_choropleth(df, "price", BE_provinces)
-            st.plotly_chart(median_price_aggregate_fig)
+            st.plotly_chart(median_price_aggregate_fig, use_container_width=True)
 
             st.markdown("#### What defines the typical property in Belgium?")
             median_values = df[
@@ -265,14 +267,14 @@ def main():
             selectable_feature_aggregate_fig = get_choropleth(
                 df, converted_selected_feature, BE_provinces
             )
-            st.plotly_chart(selectable_feature_aggregate_fig)
+            st.plotly_chart(selectable_feature_aggregate_fig, use_container_width=True)
 
             stats_plot = get_stats_plot(df, converted_selected_feature)
-            st.plotly_chart(stats_plot)
+            st.plotly_chart(stats_plot, use_container_width=True)
 
         with col3:
             number_of_ads_fig = get_choropleth(df, "number_of_ads", BE_provinces)
-            st.plotly_chart(number_of_ads_fig)
+            st.plotly_chart(number_of_ads_fig, use_container_width=True)
             st.markdown("#### Fun facts about the dataset")
 
             oldest_house = df.sort_values(by="construction_year").head(1)

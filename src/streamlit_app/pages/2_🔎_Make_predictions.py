@@ -143,7 +143,10 @@ def main():
             )
         with st.sidebar:
             with st.expander("See historical model performance"):
-                st.plotly_chart(display_model_performance(historical_model_performance))
+                st.plotly_chart(
+                    display_model_performance(historical_model_performance),
+                    use_container_width=True,
+                )
 
         with st.expander("click to expand"):
             col1, col2, col3 = st.columns(spec=3, gap="large")
