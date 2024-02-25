@@ -92,7 +92,7 @@ def main():
     st.subheader("Planned Enhancements")
     st.info(
         """
-        - :white_check_mark: Collaborate with the [Kaggle](https://www.kaggle.com/datasets/unworried1686/belgian-property-prices-2023/data) community. Share initial data and gather insights on potential model improvements and data preprocessing techniques for better predictions.
+        - :white_check_mark: Collaborate with the Kaggle community ([dataset1](https://www.kaggle.com/datasets/unworried1686/belgian-property-prices-2023) and [dataset2](https://www.kaggle.com/datasets/unworried1686/belgian-property-prices-2023-dec-2024-feb/data)). Share initial data and gather insights on potential model improvements and data preprocessing techniques for better predictions.
         - :white_check_mark: Incorporate confidence intervals into predictions.
         - :white_check_mark: Implement data upload to a database for improved data management.
         - :construction: Explore the inclusion of advertisement time to account for seasonality in the model.
