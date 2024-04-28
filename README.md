@@ -1,4 +1,4 @@
-Forecasting Belgian Property Prices with CatBoost and MAPIE!
+Forecast Belgian Property Prices with CatBoost and MAPIE!
 ==============================
 
 ![Alt Text](demo.gif)

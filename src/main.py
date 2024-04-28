@@ -110,7 +110,7 @@ def main() -> None:
         session=session,
         N=N,
     )
-    selected_urls = random.sample(urls, k=int(len(urls) * 0.25))
+    selected_urls = random.sample(urls, k=int(len(urls) * 0.5))
     print(
         f"Length of all urls: {len(urls)}. Legth of selected urls: {len(selected_urls)}"
     )
@@ -135,21 +135,29 @@ def main() -> None:
             X, y, test_size=0.2, random_state=utils.Configuration.RANDOM_SEED
         )
 
+        # Temporarily remove this step as there is some difference between test and validation results
         X_corr, y_corr = preprocessing_transformers.remove_outliers(X_train, y_train)
 
         print(f"Shape of X_train before outlier removal: {X_train.shape}")
         print(f"Shape of X_train after outlier removal: {X_corr.shape}")
 
-        regressor = model.create_tuned_pipeline(X_corr, y_corr)
+        # regressor = model.create_tuned_pipeline(X_corr, y_corr)
+        regressor = model.create_tuned_pipeline(X_train, y_train)
+
+        # model_evaluation = model.evaluate_model(
+        #    regressor, X_corr, y_corr, X_test, y_test
+        # )
 
         model_evaluation = model.evaluate_model(
-            regressor, X_corr, y_corr, X_test, y_test
+            regressor, X_train, y_train, X_test, y_test
         )
+
         print(model_evaluation)
         db.model_performance.insert_one(model_evaluation)
 
         mapie_model = mapie.regression.MapieRegressor(regressor, method="base", cv=5)
-        mapie_model.fit(X_corr, y_corr)
+        # mapie_model.fit(X_corr, y_corr)
+        mapie_model.fit(X_train, y_train)
         joblib.dump(mapie_model, utils.Configuration.MODEL.joinpath("mapie_model.pkl"))
 
     finally:
