@@ -110,7 +110,7 @@ def main() -> None:
         session=session,
         N=N,
     )
-    selected_urls = random.sample(urls, k=int(len(urls) * 0.5))
+    selected_urls = random.sample(urls, k=int(len(urls) * 0.25))
     print(
         f"Length of all urls: {len(urls)}. Legth of selected urls: {len(selected_urls)}"
     )
