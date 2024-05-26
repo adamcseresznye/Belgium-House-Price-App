@@ -209,8 +209,8 @@ class DataCleaner:
             data.apply(lambda x: x.astype(str))
             .assign(
                 price=lambda x: pd.to_numeric(
-                    x["price"]
-                    .str.extract(r"(\d+,\d+)", expand=False)
+                    x["price"].str.extract(r"(\d+(?:,\d+)*)", expand=False)
+                    # .str.extract(r"(\d+,\d+)", expand=False) # This was the re before. it did not work for numbers above 1e6 (truncated the number).
                     .str.replace(",", ""),
                     errors="coerce",
                 ),
